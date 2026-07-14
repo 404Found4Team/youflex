@@ -16,11 +16,11 @@ public class ReviewController {
 	private final ReviewService reviewService;
 	
 //	작성 폼으로 이동
-	@GetMapping("/post/write")
+	@GetMapping("/review/write")
 	public String writeForm(HttpSession session, Model model) {
 //		세션에 loginMember가 없으면 => 로그인 페이지로 이동
 		if(session.getAttribute("loginMember") == null) {
-			return "redirect:/member/login";
+			return "redirect:/login";
 		}
 		
 		return "review/write";
