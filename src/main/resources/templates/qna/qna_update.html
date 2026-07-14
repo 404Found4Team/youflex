@@ -7,6 +7,7 @@
 <link rel="stylesheet" th:href="@{/css/common.css}" />
 <link rel="stylesheet" th:href="@{/css/qna_update.css}" />
 </head>
+<!-- data-nav-current: 상단 네비게이션에서 현재 활성화된 메뉴(qna)를 표시하기 위한 속성 -->
 <body data-nav-current="qna">
 
 	<!-- 
@@ -26,15 +27,25 @@
 <main class="container">
   <div class="notice-detail-wrap">
     <h1 class="notice-detail-title">질문 수정</h1>
+
+    <!-- 질문 수정 폼: data-qna-id로 어느 질문을 수정하는지 JS에서 참조 -->
     <form id="qnaUpdateForm" th:attr="data-qna-id=${qna.qnaId}">
+
+      <!-- 제목 입력: 기존 값으로 초기화 -->
       <div class="form-row">
         <label>제목</label>
         <input type="text" id="qna_title" name="qna_title" th:value="${qna.qnaTitle}" />
       </div>
+
+      <!-- 내용 입력: 기존 값으로 초기화 -->
       <div class="form-row">
         <label>내용</label>
         <textarea id="qna_content" name="qna_content" th:text="${qna.qnaContent}"></textarea>
       </div>
+
+      <!-- 공개 여부 선택: 기존 값에 따라 라디오 버튼 체크 상태 결정 -->
+      <!-- 주의: qna.qnaIsSecret 값은 서비스단(QnaServiceImpl.createQna)에서 "Y"/"N"이 아닌 "비밀"/"공개" 문자열로 변환되어 저장되므로,
+           비교 조건이 실제 DB 값과 일치하지 않아 라디오 버튼이 항상 "공개"로만 체크될 가능성이 있음 (확인 필요) -->
       <div class="form-row">
         <label>공개 여부</label>
         <div class="visibility-options">
@@ -46,6 +57,8 @@
           </label>
         </div>
       </div>
+
+      <!-- 취소(상세 페이지로 이동) / 수정 완료(JS로 저장 처리) 버튼 -->
       <div class="edit-toolbar">
         <a th:href="@{/qna/{id}(id=${qna.qnaId})}" class="btn">취소</a>
         <button type="button" class="btn btn-primary" id="qnaSaveBtn">수정 완료</button>
@@ -54,12 +67,14 @@
   </div>
 </main>
 
+<!-- 알림 슬라이드 패널: 내용은 app.js가 /api/notifications 호출로 채움 -->
 <div class="overlay-backdrop" id="notificationBackdrop"></div>
 <aside class="slide-panel" id="notificationPanel">
   <div class="panel-header"><h3>🔔 알림</h3><button class="panel-close" id="notificationClose">✕</button></div>
   <div class="panel-body" id="notificationBody"></div>
 </aside>
 
+<!-- 챗봇 실행 플로팅 버튼(FAB) 및 챗봇 패널 (이 페이지에는 퀴즈 기능 없이 기본 채팅 UI만 존재) -->
 <button class="fab" id="chatbotFab" title="챗봇 실행">🤖</button>
 <div class="overlay-backdrop" id="chatbotBackdrop"></div>
 <aside class="slide-panel" id="chatbotPanel">
@@ -70,12 +85,14 @@
   <div class="panel-input-row"><input type="text" placeholder="질문을 입력하세요" /><button class="btn btn-primary">전송</button></div>
 </aside>
 
+<!-- 커뮤니티 채팅 패널: 목록/채팅/개설 탭 구성 -->
 <div class="overlay-backdrop" id="chatroomBackdrop"></div>
 <aside class="slide-panel" id="chatroomPanel">
   <div class="panel-header"><h3>💬 커뮤니티 채팅</h3><button class="panel-close" id="chatroomClose">✕</button></div>
   <div class="panel-tabs" data-tab-panels>
     <button class="active" data-tab-target="list">목록</button>
     <button data-tab-target="chat">채팅</button>
+    <!-- data-role-visible: critic 또는 admin 권한을 가진 사용자에게만 노출 (JS에서 처리 추정) -->
     <button data-tab-target="create" data-role-visible="critic,admin">개설</button>
   </div>
   <div class="panel-body" data-tab-panel="list"></div>
@@ -83,6 +100,7 @@
   <div class="panel-body" data-tab-panel="create" style="display:none"></div>
 </aside>
 
+<!-- 공통 푸터: 회사 정보 및 저작권 안내 -->
 <footer class="site-footer main-footer">
   <div class="container main-footer-inner">
     <div class="main-footer-brand">
@@ -101,6 +119,7 @@
   </div>
 </footer>
 
+<!-- 공통 스크립트 및 이 페이지 전용 스크립트(수정 폼 제출 처리 등은 qna_update.js에서 담당) -->
 <script src="/js/app.js"></script>
 <script src="js/qna_update.js"></script>
 </body>
