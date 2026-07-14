@@ -29,5 +29,6 @@ public class NoticeViewController {
         NoticeDTO notice = noticeService.getNoticeDetail(noticeId);
         model.addAttribute("notice", notice);
         return "/notice/detail";
+
     }
 }
