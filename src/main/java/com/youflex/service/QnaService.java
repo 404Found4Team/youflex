@@ -1,6 +1,7 @@
 package com.youflex.service;
 
 import java.util.List;
+
 import com.youflex.dto.QnaDTO;
 
 public interface QnaService {

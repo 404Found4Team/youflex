@@ -91,8 +91,19 @@
 				</tr>
 			</thead>
 			<tbody>
-				<!-- TODO: QnaMapper/Service 만들면 th:each로 교체 -->
-				<!-- 현재는 QnaController/QnaService가 이미 구현되어 있으므로, 이 부분을 noticeList와 동일한 패턴(th:each)으로 교체 필요 -->
+			  <tr th:if="${#lists.isEmpty(qnaList)}">
+			    <td colspan="6" style="text-align:center;color:var(--text-2)">등록된 질문이 없습니다.</td>
+			  </tr>
+			  <tr th:each="qna, stat : ${qnaList}">
+			    <td class="num"><span class="badge" th:text="${qnaList.size() - stat.index}">1</span></td>
+			    <td>
+			      <a class="title-link" th:href="@{/qna/{id}(id=${qna.qnaId})}" th:text="${qna.qnaTitle}">제목</a>
+			    </td>
+			    <td class="meta" th:text="${qna.memberName}">닉네임</td>
+			    <td class="meta" th:text="${#temporals.format(qna.qnaCreatedAt, 'yyyy-MM-dd')}">2026-06-28</td>
+			    <td class="meta" th:text="'👁 ' + ${qna.qnaHit}">👁 0</td>
+			    <td class="meta" th:text="${qna.qnaStatus}">답변대기</td>
+			  </tr>
 			</tbody>
 		</table>
 	</div>

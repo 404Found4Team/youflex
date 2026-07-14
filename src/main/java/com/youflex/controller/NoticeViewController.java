@@ -1,13 +1,17 @@
 package com.youflex.controller;
 
 import java.util.List;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+
 import com.youflex.dto.NoticeDTO;
 import com.youflex.service.NoticeService;
+import com.youflex.service.QnaService;
+
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -21,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 public class NoticeViewController {
 
     private final NoticeService noticeService;
+    private final QnaService qnaService;
 
     // 공지사항 목록 화면
     /**
@@ -31,7 +36,10 @@ public class NoticeViewController {
     @GetMapping
     public String noticeList(Model model) {
         List<NoticeDTO> noticeList = noticeService.getNoticeList();
-        model.addAttribute("noticeList", noticeList); // 목록 데이터를 뷰로 전달
+        model.addAttribute("noticeList", noticeList);
+
+        model.addAttribute("qnaList", qnaService.getQnaList()); // 이 줄 추가
+
         return "notice/notice";
     }
 
