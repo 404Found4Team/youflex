@@ -1,10 +1,7 @@
 package com.youflex.mapper;
 
-import org.apache.ibatis.annotations.Mapper;
-
 import com.youflex.dto.MemberDTO;
 
-@Mapper
 public interface MemberMapper {
 
     // 로그인 검증 + 아이디 중복확인(로그인/회원가입)에서 공용으로 사용
