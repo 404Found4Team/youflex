@@ -2,6 +2,9 @@ package com.youflex.mapper;
 
 import com.youflex.dto.MemberDTO;
 
+import com.youflex.dto.MemberDTO;
+
+@Mapper
 public interface MemberMapper {
 
     // 로그인 검증 + 아이디 중복확인(로그인/회원가입)에서 공용으로 사용
