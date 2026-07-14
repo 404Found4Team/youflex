@@ -1,9 +1,13 @@
+package com.youflex.dto;
+
 import java.time.LocalDateTime;
 
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
-
+@NoArgsConstructor
 public class ReviewDTO {
     private int reviewId;
     private int memberId;
