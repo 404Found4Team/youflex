@@ -1,22 +1,12 @@
 package com.youflex.controller;
 
 import java.util.List;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.*;
+import lombok.RequiredArgsConstructor;
 import com.youflex.dto.NoticeDTO;
 import com.youflex.service.NoticeService;
-
-import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/notice")
@@ -42,7 +32,7 @@ public class NoticeController {
     // 공지사항 등록 (관리자 전용)
     @PostMapping
     public ResponseEntity<Void> createNotice(@RequestBody NoticeDTO noticeDTO) {
-        // TODO: 관리자 권한 체크 필요 (세션 or @PreAuthorize)
+        // TODO: 관리자 권한 체크 필요 (세션 or Spring Security)
         noticeService.createNotice(noticeDTO);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }

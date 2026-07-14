@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>YouFlex - Q&amp;A 상세</title>
+<link rel="stylesheet" th:href="@{/css/common.css}" />
+<link rel="stylesheet" th:href="@{/css/qna_detail.css}" />
+</head>
+<body data-nav-current="qna">
+
+	<!-- 
+	    ==================================
+	      공통 헤더바
+	    ==================================
+	    -->
+	    <header th:replace="~{fragments/layout :: header}"></header>
+
+		<!-- 
+		    ==================================
+		      공통 네비게이션 바
+		    ==================================
+		    -->
+		    <nav class="category-nav" th:replace="~{fragments/layout :: nav}"></nav>
+
+<main class="container">
+  <div class="notice-detail-wrap">
+    <div class="notice-detail-title-row">
+      <h1 class="notice-detail-title" th:text="${qna.qnaTitle}">제목</h1>
+      <!-- 작성자 본인에게만 노출. 세션 구조 확정되면 이 조건 교체 필요 -->
+      <div class="owner-actions" th:if="${session.memberId != null and session.memberId == qna.memberId}"
+           style="display:flex;gap:8px;flex-shrink:0">
+        <a th:href="@{/qna/{id}/edit(id=${qna.qnaId})}" class="btn btn-sm">수정</a>
+        <button class="btn btn-sm" style="border-color:var(--danger);color:var(--danger)"
+                th:onclick="|if(confirm('정말 삭제하시겠습니까?')) deleteQna(${qna.qnaId})|">삭제</button>
+      </div>
+    </div>
+
+    <div class="notice-detail-meta">
+      <span>작성자: <span th:text="${qna.memberName}">닉네임</span><br /></span>
+      <span>등록일: <span th:text="${#temporals.format(qna.qnaCreatedAt, 'yyyy-MM-dd HH:mm')}"></span><br /></span>
+      <span>조회수: <span th:text="${qna.qnaHit}"></span></span>
+    </div>
+
+    <div class="notice-detail-body" th:text="${qna.qnaContent}">내용</div>
+
+    <!-- 관리자 답변 or 대기 박스 분기 -->
+    <div class="qna-answer-box" th:if="${answer != null}">
+      <div class="qna-answer-label">✔ 관리자 답변
+        <span class="qna-answer-date" th:text="${#temporals.format(answer.adminAnswerCreatedAt, 'yyyy-MM-dd HH:mm')}"></span>
+        <button class="btn btn-sm" th:if="${session.role == 'admin'}"
+                th:onclick="|deleteAnswer(${qna.qnaId}, ${answer.adminAnswerId})|">삭제</button>
+      </div>
+      <div class="qna-answer-body" th:text="${answer.adminAnswerContent}"></div>
+    </div>
+    <div class="qna-wait-box" th:if="${answer == null}">
+      아직 관리자 답변이 등록되지 않았습니다.
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;margin-top:16px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+      <button class="btn btn-sm btn-ghost" th:onclick="|openReportModal(${qna.qnaId})|">🚩 신고</button>
+    </div>
+
+    <section class="qna-comment-section">
+      <h3 id="commentCountLabel" th:text="'댓글 (' + ${comments.size()} + ')'">댓글</h3>
+
+      <div class="qna-comment-item" th:each="comment : ${comments}" th:attr="data-comment-id=${comment.qnaCommentId}">
+        <div class="qna-comment-left">
+          <div class="qna-comment-avatar"></div>
+          <div>
+            <span class="qna-comment-author" th:text="${comment.memberName}">닉네임</span>
+            <span class="qna-comment-date" th:text="${#temporals.format(comment.qnaCommentCreatedAt, 'yyyy-MM-dd HH:mm')}"></span>
+            <div class="qna-comment-body" th:text="${comment.qnaCommentContent}"></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button class="btn btn-sm btn-ghost" onclick="toggleReportForm(this)">신고</button>
+          <button class="btn btn-sm" th:if="${session.memberId != null and session.memberId == comment.memberId}"
+                  th:onclick="|deleteComment(${comment.qnaCommentId})|">삭제</button>
+        </div>
+        <div class="qna-report-form" style="display:none">
+          <label class="text-muted" style="font-size:12px">신고 사유</label>
+          <select>
+            <option>스팸 / 도배</option><option>욕설 / 비방</option><option>음란물</option>
+            <option>저작권 침해</option><option>기타</option>
+          </select>
+          <textarea placeholder="신고 사유를 구체적으로 입력해주세요"></textarea>
+          <div class="btn-row" style="margin-top:0">
+            <button type="button" class="btn btn-sm" onclick="closeReportForm(this)">취소</button>
+            <button type="button" class="btn btn-sm btn-primary" onclick="submitReportForm(this)">신고하기</button>
+          </div>
+        </div>
+      </div>
+
+      <form id="qnaCommentForm" class="comment-input-row" th:attr="data-qna-id=${qna.qnaId}">
+        <input type="text" id="qna_comment_content" name="qna_comment_content" maxlength="100" placeholder="댓글을 입력해 주세요." />
+        <button type="button" class="btn btn-primary" id="commentSubmitBtn">등록</button>
+      </form>
+    </section>
+
+    <div style="margin-top:20px">
+      <a th:href="@{/notices(hash='qna')}" class="btn btn-primary">목록으로 (To List)</a>
+    </div>
+  </div>
+</main>
+
+<!-- 신고하기 모달 -->
+<div class="report-modal-backdrop" id="reportModalBackdrop">
+  <div class="report-modal">
+    <h2>🚩 신고하기</h2>
+    <div class="target-chip" id="reportTargetChip">신고 대상: 질문</div>
+    <form id="reportForm">
+    <div class="form-row">
+      <label>신고 사유</label>
+      <select id="reportReasonSelect">
+        <option>스팸 / 도배</option><option>욕설 / 비방</option><option>음란물</option>
+        <option>저작권 침해</option><option>기타</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>상세 내용</label>
+      <textarea id="reportDetailInput" placeholder="신고 사유를 구체적으로 입력해주세요"></textarea>
+    </div>
+    <div class="btn-row">
+      <button type="button" class="btn" onclick="closeReportModal()">취소</button>
+      <button type="button" class="btn btn-primary" onclick="submitReportModal()">신고하기</button>
+    </div>
+    </form>
+  </div>
+</div>
+
+<div class="overlay-backdrop" id="notificationBackdrop"></div>
+<aside class="slide-panel" id="notificationPanel">
+  <div class="panel-header"><h3>🔔 알림</h3><button class="panel-close" id="notificationClose">✕</button></div>
+  <div class="panel-body" id="notificationBody"></div>
+</aside>
+
+<button class="fab" id="chatbotFab" title="챗봇 실행">🤖</button>
+<div class="overlay-backdrop" id="chatbotBackdrop"></div>
+<aside class="slide-panel" id="chatbotPanel">
+  <div class="panel-header"><h3>🤖 YouFlex 챗봇</h3><button class="panel-close" id="chatbotClose">✕</button></div>
+  <div class="panel-body">
+    <div class="chat-msg"><div class="avatar"></div><div class="bubble">무엇을 도와드릴까요? 객관식 1문제 + OX 1문제, 하루 3번까지 풀 수 있어요!</div></div>
+    <div class="quiz-box" id="qnaQuizBox">
+      <div class="quiz-count" id="qnaQuizCount">🎯 오늘 남은 퀴즈 횟수: 3/3</div>
+      <button class="btn btn-sm btn-primary" id="qnaQuizStartBtn">퀴즈 시작</button>
+      <div id="qnaQuizPlay" style="display:none">
+        <div class="quiz-progress" id="qnaQuizProgress"></div>
+        <div class="quiz-question" id="qnaQuizQuestion"></div>
+        <div class="quiz-options" id="qnaQuizOptions"></div>
+        <button class="btn btn-sm btn-primary" id="qnaQuizNextBtn" style="display:none">다음 문제 ›</button>
+      </div>
+      <div class="quiz-result" id="qnaQuizResult" style="display:none"></div>
+    </div>
+  </div>
+  <div class="panel-input-row"><input type="text" placeholder="질문을 입력하세요" /><button class="btn btn-primary">전송</button></div>
+</aside>
+
+<div class="overlay-backdrop" id="chatroomBackdrop"></div>
+<aside class="slide-panel" id="chatroomPanel">
+  <div class="panel-header"><h3>💬 커뮤니티 채팅</h3><button class="panel-close" id="chatroomClose">✕</button></div>
+  <div class="panel-tabs" data-tab-panels>
+    <button class="active" data-tab-target="list">목록</button>
+    <button data-tab-target="chat">채팅</button>
+    <button data-tab-target="create" data-role-visible="critic,admin">개설</button>
+  </div>
+  <div class="panel-body" data-tab-panel="list"></div>
+  <div class="panel-body" data-tab-panel="chat" style="display:none;padding:0"></div>
+  <div class="panel-body" data-tab-panel="create" style="display:none"></div>
+</aside>
+
+<footer class="site-footer main-footer">
+  <div class="container main-footer-inner">
+    <div class="main-footer-brand">
+      <span class="logo"><img th:src="@{/assets/img/logo.png}" alt="YouFlex" /></span>
+      <p>당신의 콘텐츠 취향을 연결하는<br />OTT 리뷰 &amp; 커뮤니티 플랫폼</p>
+    </div>
+    <div class="main-footer-info">
+      <p>(주)YouFlex&nbsp;&nbsp;|&nbsp;&nbsp;대표: YouFlex&nbsp;&nbsp;|&nbsp;&nbsp;사업자등록번호: 000-00-00000</p>
+      <p>개인정보관리책임자: YouFlex</p>
+      <p>이메일: youflex@youflex.com&nbsp;&nbsp;|&nbsp;&nbsp;고객센터: 00-000-0000</p>
+    </div>
+    <div class="main-footer-meta">
+      <p>&copy; 2026 YouFlex. All rights reserved.</p>
+    </div>
+    <button class="main-footer-top" id="footerTopBtn" title="맨 위로">↑</button>
+  </div>
+</footer>
+
+<script src="@{/js/app.js}"></script>
+<script src="@{/js/qna_detail.js}"></script>
+<script th:inline="javascript">
+  function deleteQna(qnaId) {
+    fetch(`/api/qna/${qnaId}`, { method: 'DELETE' })
+      .then(res => { if (res.ok) location.href = '/notices?hash=qna'; });
+  }
+  function deleteAnswer(qnaId, adminAnswerId) {
+    if (!confirm('답변을 삭제하시겠습니까?')) return;
+    fetch(`/api/qna/${qnaId}/answer/${adminAnswerId}`, { method: 'DELETE' })
+      .then(res => { if (res.ok) location.reload(); });
+  }
+  function deleteComment(commentId) {
+    if (!confirm('댓글을 삭제하시겠습니까?')) return;
+    fetch(`/api/qna/comments/${commentId}`, { method: 'DELETE' })
+      .then(res => { if (res.ok) location.reload(); });
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    const submitBtn = document.getElementById('commentSubmitBtn');
+    if (!submitBtn) return;
+    submitBtn.addEventListener('click', () => {
+      const form = document.getElementById('qnaCommentForm');
+      const qnaId = form.dataset.qnaId;
+      const content = document.getElementById('qna_comment_content').value.trim();
+      if (!content) { alert('댓글 내용을 입력해주세요.'); return; }
+      fetch(`/api/qna/${qnaId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ qnaCommentContent: content })
+      }).then(res => { if (res.ok) location.reload(); });
+    });
+  });
+</script>
+</body>
+</html>
