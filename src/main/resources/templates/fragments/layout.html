@@ -17,7 +17,7 @@
 		
 		<!-- 비 로그인 시(비회원) -->
 	    <div class="header-actions" th:if="${session.loginMember == null}">
-	      <a href="02_login.html" class="btn btn-ghost">로그인</a>
+	      <a th:href="@{login.html}" class="btn btn-ghost">로그인</a>
 	    </div>
 
 		<!-- 로그인 시(회원) -->
@@ -178,7 +178,10 @@
   <div class="panel-body" data-tab-panel="chat" style="display:none;padding:0">
     <div class="chatroom-title">
       <span>💬 오늘 개봉작 실시간 토크</span>
-      <button class="btn btn-sm btn-danger" data-role-visible="critic,admin" onclick="giveChatWarning()">⚠ 경고 부여</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-sm btn-danger" data-role-visible="critic,admin" onclick="giveChatWarning()">⚠ 경고 부여</button>
+        <button class="btn btn-sm btn-ghost" onclick="confirmRoomLeave()">🚪 나가기</button>
+      </div>
     </div>
     <div class="chatroom-messages" id="chatroomMessages">
       <div class="chat-msg system">‘영화광123’님이 입장했습니다</div>
