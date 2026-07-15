@@ -4,6 +4,7 @@ import org.apache.ibatis.annotations.Mapper;
 
 import com.youflex.dto.MemberDTO;
 
+
 @Mapper
 public interface MemberMapper {
 
