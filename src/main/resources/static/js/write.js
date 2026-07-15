@@ -43,7 +43,7 @@ document.getElementById('genreSaveBtn').addEventListener('click', () => {
 
 // ===== 별점 클릭 처리(웅조) ===============
 		// let stars  = document.querySelectorAll(".rating-input span");
-		// let ratingInput = document.querySelector("input[name='postRating']");
+		// let ratingInput = document.querySelector("input[name='reviewRating']");
 		
 		// console.log(stars);
 		// console.log(ratingInput);
