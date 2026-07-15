@@ -26,10 +26,10 @@ genreChips.forEach(chip => {
     chip.classList.toggle('selected'); // 클릭 시 selected 클래스를 넣었다 뺐다 함
   });
 });
-/*document.getElementById('genreSaveBtn').addEventListener('click', () => {
+document.getElementById('genreSaveBtn').addEventListener('click', () => {
   document.getElementById('genreModalBackdrop').classList.remove('open');
   alert('취향이 저장되었습니다. (데모)');
-});*/
+});
 document.getElementById('genreSaveBtn').addEventListener('click', () => {
   // 현재 선택된 장르 수집 (데모 혹은 실제 데이터 반영용)
   const selectedGenres = [];
@@ -40,6 +40,8 @@ document.getElementById('genreSaveBtn').addEventListener('click', () => {
   document.getElementById('genreModalBackdrop').classList.remove('open');
   alert(`선택된 취향: [${selectedGenres.join(', ')}]이 저장되었습니다.`);
 });
+
+
 
 // ===== 별점 클릭 처리(웅조) ===============
 		// let stars  = document.querySelectorAll(".rating-input span");

@@ -57,6 +57,11 @@ public class ReviewController {
 		reviewDTO.setMemberId(loginMember.getMemberId());
 //		System.out.println(reviewDTO.getMemberId());
 		
+//		취향 선택 모달을 genre_category 테이블 값으로 채우기 위해 목록을 같이 넘김
+		public String writeForm(Model model) {
+			model.addAttribute("genres", genreCategorySer)
+		}
+		
 		if(reviewDTO.getImgFile() != null && !reviewDTO.getImgFile().isEmpty()) {
 //			파일 저장 후 DB에 저장할 파일명을 reviewDTO에 세팅
 			String savedFileName = saveFile(reviewDTO.getImgFile());
