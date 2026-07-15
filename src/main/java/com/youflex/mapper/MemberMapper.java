@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Param;
 
 import com.youflex.dto.MemberDTO;
 
+
 @Mapper
 public interface MemberMapper {
 
