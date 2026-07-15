@@ -1,11 +1,14 @@
 package com.youflex.controller;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.UUID;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.youflex.dto.MemberDTO;
 import com.youflex.dto.ReviewDTO;
@@ -17,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 @Controller
 @RequiredArgsConstructor
 public class ReviewController {
+//	중괄호 짝 찾기 : ctrl+shift+p
 	
 	private final ReviewService reviewService;
 	
@@ -27,7 +31,6 @@ public class ReviewController {
 		if(session.getAttribute("loginMember") == null) {
 			return "redirect:/login";
 		}
-		
 		return "review/write";
 	}
 	
@@ -44,11 +47,43 @@ public class ReviewController {
 		
 //		ReviewDTO에 작성자 번호(memberId) 설정
 		reviewDTO.setMemberId(loginMember.getMemberId());
-		//System.out.println(reviewDTO.getMemberId());
+		System.out.println(reviewDTO.getMemberId());
 		
-//		if(reviewDTO.getImgFile() != )
+		if(reviewDTO.getImgFile() != null && !reviewDTO.getImgFile().isEmpty()) {
+//			파일 저장 후 DB에 저장할 파일명을 reviewDTO에 세팅
+			String savedFileName = saveFile(reviewDTO.getImgFile());
+			reviewDTO.setReviewImg("savedFileName");
+		}
 		
 //		저장 완료 후 메인 화면으로 이동
 		return "redirect:/";
 	}
+//	----- 파일 저장 메서드 -----
+//	반환값 : DB에 저장할 새 파일명(UUID기반)
+	private String saveFile(MultipartFile file) throws IOException{
+//		(1) 원본 파일명에서 확장자 추출
+//		getOriginalFilename() : 사용자 PC에서 원본 파일명을 반환
+//					ex) "pizza.jpg"
+//		lastIndexOf(".") : 마지막 점(.) 위치 찾기
+//		substring(점위치) : 점 포함 이후 문자열 추출 -> ".jpg"
+		String originalName = file.getOriginalFilename();
+		String ext = originalName.substring(originalName.lastIndexOf("."));
+//		ex) "피자.jpg" => ext = ".jpg"
+		
+//		(2) UUID로 고유한 새 파일명 생성
+//		randomUUID() : 겹치지 않는 고유 ID생성
+//		toString() - "5550e8400-e49b..." 형태의 문자열로 반환
+		String savedName = UUID.randomUUID().toString() + ext;
+		
+//		(3) 업로드 폴더가 없으면 자동으로 생성
+//		new File(uploadPath) - "C:/upload/todayeat/" 폴더를 가리키는 객체
+		File uploadDir = new File(uploadPath);
+		if(!uploadDir.exists()) {
+			
+		}
+		
+	}
+	
+	
+	return savedName;
 }
