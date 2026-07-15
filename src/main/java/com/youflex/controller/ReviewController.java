@@ -2,8 +2,12 @@ package com.youflex.controller;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,6 +27,10 @@ public class ReviewController {
 //	중괄호 짝 찾기 : ctrl+shift+p
 	
 	private final ReviewService reviewService;
+	
+//	application.properties의 youflex.upload.path값을 가져옴
+	@Value("${youflex.upload.path}")
+	private String uploadPath;
 	
 //	1) 작성 폼으로 이동
 	@GetMapping("/review/write")
@@ -47,13 +55,16 @@ public class ReviewController {
 		
 //		ReviewDTO에 작성자 번호(memberId) 설정
 		reviewDTO.setMemberId(loginMember.getMemberId());
-		System.out.println(reviewDTO.getMemberId());
+//		System.out.println(reviewDTO.getMemberId());
 		
 		if(reviewDTO.getImgFile() != null && !reviewDTO.getImgFile().isEmpty()) {
 //			파일 저장 후 DB에 저장할 파일명을 reviewDTO에 세팅
 			String savedFileName = saveFile(reviewDTO.getImgFile());
-			reviewDTO.setReviewImg("savedFileName");
+			reviewDTO.setReviewImg(savedFileName);
 		}
+		
+//		게시글 저장
+		reviewService.write(reviewDTO);
 		
 //		저장 완료 후 메인 화면으로 이동
 		return "redirect:/";
@@ -79,11 +90,24 @@ public class ReviewController {
 //		new File(uploadPath) - "C:/upload/todayeat/" 폴더를 가리키는 객체
 		File uploadDir = new File(uploadPath);
 		if(!uploadDir.exists()) {
-			
+//			폴더가 없다면 폴더 생성
+			uploadDir.mkdirs();
 		}
 		
+//		(4) 파일 실제 저장
+//		Paths.get(uploadPath+savedName) - 저장할 전체 경로 생성
+//		ex) C:/upload/todayeat/550....jpg
+		Path savePath = Paths.get(uploadPath+savedName);
+		
+//		Files.copy(파일데이터, 저장경로)
+//		getInputStream() : MultipartFile에서 실제 파일 데이터를 꺼냄
+		Files.copy(file.getInputStream(), savePath);
+		
+//		(5) DB에 저장할 파일명 반환(전체 경로가 아닌 이름만)
+//		나중에 <img src="/upload/파일명"> 형태로 사용
+		
+		return savedName;
 	}
 	
 	
-	return savedName;
 }

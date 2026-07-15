@@ -66,6 +66,10 @@
   ==================================
 -->
 	<main class="container">
+		
+		<!-- enctype="multipart/form-data" 사진 파일을 전송하기 위해 작성 -->
+		<form class="card" th:action="@{/review/write}" method="post" enctype="multipart/form-data"></form>
+		
 		<div class="write-page-grid">
 			<div class="write-wrap">
 				<!-- '장르'버튼 넣을 div박스 추가(웅조) -->
@@ -83,7 +87,7 @@
 					<div class="row-2">
 						<div class="form-row">
 							<label>카테고리 (장르)</label>
-							<select id="genre_category_id" name="genre_category_id">
+							<select id="genre_category_id" name="genreCategoryId">
 								<option value="1">영화</option>
 								<option value="2">드라마</option>
 								<option value="3">예능</option>
@@ -93,7 +97,7 @@
 						</div>
 						<div class="form-row">
 							<label>플랫폼</label>
-							<select id="review_platform" name="review_platform">
+							<select id="review_platform" name="reviewPlatform">
 								<option>넷플릭스</option>
 								<option>티빙</option>
 								<option>디즈니+</option>
@@ -107,7 +111,7 @@
 					<!-- 제목 작성 영역 -->
 					<div class="form-row">
 						<label>제목</label>
-						<input type="text" id="review_title" name="review_title" placeholder="제목을 입력하세요" />
+						<input type="text" id="review_title" name="reviewTitle" placeholder="제목을 입력하세요" />
 					</div>
 
 					<!-- 별점 수정(웅조) -->
@@ -143,7 +147,7 @@
 							</div>
 						</div>
 						<!-- 별점값 js에서 클릭시 value를 업데이트 -->
-						<input type="hidden" name="postRating" value="4">
+						<input type="hidden" name="reviewRating" value="4">
 						<div class="text-muted text-sm mt-8">별을 클릭해서 별점을 선택하세요 (1~5점)</div>
 					</div>
 
@@ -155,7 +159,6 @@
 							<!-- <input> 추가완료 -->
 							<input type="file" name="imgFile" id="imgInput" accept="image/*" style="font-size:0.85rem;"
 								class="representative-img">
-							<!-- </div> -->
 							<img id="imgPreview" alt="미리보기"
 								style="display:none; max-width:100%; max-height:200px; object-fit:cover; border-radius:8px; margin-top:10px;">
 						</div>
@@ -164,13 +167,13 @@
 					<!-- 본문 내용 작성 -->
 					<div class="form-row">
 						<label>본문</label>
-						<textarea id="review_content" name="review_content" placeholder="리뷰 내용을 입력하세요"></textarea>
+						<textarea id="review_content" name="reviewContent" placeholder="리뷰 내용을 입력하세요"></textarea>
 						<div class="hint-line">※ 등록된 내용은 비속어 필터링이 자동 적용됩니다.</div>
 					</div>
 
 					<div class="form-row">
 						<label>관련작품</label>
-						<input type="text" id="review_related" name="review_related"
+						<input type="text" id="review_related" name="reviewRelated"
 							placeholder="관련 작품명을 입력하세요 (예: 오징어게임 3)" />
 					</div>
 
@@ -180,7 +183,7 @@
 						<div class="flex gap-8" style="align-items:center">
 							<span class="text-muted" style="font-size:12px">제목과 내용만 저장 가능합니다</span>
 							<button type="button" class="btn" id="draftBtn">임시저장</button>
-							<button type="button" class="btn btn-primary" id="submitBtn">등록</button>
+							<button type="submit" class="btn btn-primary" id="submitBtn">등록</button>
 						</div>
 					</div>
 				</form>
@@ -392,7 +395,7 @@
   -->
 	<footer th:replace="~{fragments/layout :: footer}">
 	</footer>
-
+ 
 	<script th:src="@{/js/app.js}"></script>
 	<script th:src="@{/js/write.js}"></script>
 </body>
