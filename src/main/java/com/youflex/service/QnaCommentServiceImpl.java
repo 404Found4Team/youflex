@@ -14,7 +14,7 @@ import com.youflex.mapper.QnaCommentMapper;
 @Service
 @RequiredArgsConstructor
 public class QnaCommentServiceImpl implements QnaCommentService {
-
+// 테스트 입력
     private final QnaCommentMapper qnaCommentMapper;
 
     /**
