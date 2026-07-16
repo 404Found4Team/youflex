@@ -1,6 +1,7 @@
 package com.youflex.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.web.multipart.MultipartFile;
 
@@ -12,7 +13,7 @@ import lombok.NoArgsConstructor;
 public class ReviewDTO {
     private int reviewId;
     private int memberId;
-    private int genreCategoryId;
+    private List<Integer> genreCategoryId;
     private String reviewPlatform;
     private String reviewRelated;
     private String reviewTitle;
@@ -34,4 +35,6 @@ public class ReviewDTO {
     private String genreCategoryName;
     private int likeCount;
     private int commentCount;
+    
+    private List<GenreCategoryDTO> genreList;
 }
