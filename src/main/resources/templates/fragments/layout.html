@@ -24,20 +24,20 @@
          <a th:href="@{/login}" class="btn btn-ghost">로그인</a>
        </div>
 
-      <!-- 로그인 시(회원) -->
-       <div class="header-actions" th:unless="${session.loginMember == null}">
-        <!-- 관리자만 뜸 -->
-        <a th:href="@{./admin}"
-         th:if="${session.loginMember.memberGrade == '관리자'}"
-           class="btn btn-ghost" 
-         style="color:var(--danger)">⚙ 관리자 페이지</a>
-         <a th:href="@{/mypage}" class="btn btn-ghost">마이페이지</a>
-         <a th:href="@{/logout}" class="btn btn-ghost">로그아웃</a>
-         <button class="icon-btn" id="notificationTrigger">🔔<span class="badge">3</span></button>
-         <button class="icon-btn" id="chatroomTrigger">💬<span class="badge">3</span></button>
-       </div>
-     </div>
-   </header>
+		<!-- 로그인 시(회원) -->
+	    <div class="header-actions" th:unless="${session.loginMember == null}">
+		  <!-- 관리자만 뜸 -->
+		  <a th:href="@{./admin}"
+			th:if="${session.loginMember.memberGrade == '관리자'}"
+		  	class="btn btn-ghost" 
+			style="color:var(--danger)">⚙ 관리자 페이지</a>
+	      <a th:href="@{/mypage}" class="btn btn-ghost">마이페이지</a>
+	      <a th:href="@{/logout}" class="btn btn-ghost">로그아웃</a>
+	      <button class="icon-btn" id="notificationTrigger">🔔<span class="badge">3</span></button>
+	      <button class="icon-btn" id="chatroomTrigger">💬<span class="badge">3</span></button>
+	    </div>
+	  </div>
+	</header>
 
    
    <!-- 
