@@ -25,7 +25,7 @@ document.getElementById('qnaSubmitBtn').addEventListener('click', async () => {
 
     if (response.ok) {
       alert('질문이 등록되었습니다.');
-      location.href = '/notice?hash=qna'; // 저장 성공 후 이동
+      location.href = '/notice#qna'; // 저장 성공 후 이동
     } else {
       alert('저장에 실패했습니다. 관리자에게 문의하세요.');
     }

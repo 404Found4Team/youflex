@@ -35,6 +35,13 @@
         VALUES (#{qnaId}, #{memberId}, #{qnaCommentContent}, NOW(), NOW())
     </insert>
 
+    <update id="updateComment" parameterType="com.youflex.dto.qna.QnaCommentDTO">
+        UPDATE qna_comment
+        SET qna_comment_content = #{qnaCommentContent},
+            qna_comment_updated_at = NOW()
+        WHERE qna_comment_id = #{qnaCommentId}
+    </update>
+
     <delete id="deleteComment" parameterType="int">
         DELETE FROM qna_comment WHERE qna_comment_id = #{qnaCommentId}
     </delete>

@@ -76,8 +76,8 @@
 	     * @param model 뷰에 전달할 데이터를 담는 모델 객체
 	     * @return 질문 수정 폼 뷰 이름 (qna/qna_update)
 	     */
-	    @GetMapping("/{qnaId}/edit")
-	    public String qnaEditForm(@PathVariable("qnaId") int qnaId, Model model, HttpSession session) {
+	    @GetMapping("/{qnaId}/update")
+	    public String qnaUpdateForm(@PathVariable("qnaId") int qnaId, Model model, HttpSession session) {
 	        MemberDTO loginMember = (MemberDTO) session.getAttribute("loginMember");
 	        Integer requesterMemberId = loginMember != null ? loginMember.getMemberId() : null;
 	        boolean isAdmin = loginMember != null && "관리자".equals(loginMember.getMemberGrade());
