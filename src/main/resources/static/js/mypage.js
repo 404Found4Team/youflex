@@ -21,9 +21,16 @@ profileFileInput.addEventListener('change', (event) => {
   reader.readAsDataURL(file);
 });
 
-// 등업신청
+// 등업신청 - 클릭하면 실제로 서버에 신청 상태를 남겨서 관리자 등업신청 관리 화면에 노출시킴
 document.getElementById('rankUpBtn').addEventListener('click', () => {
-  alert('등업 신청이 접수되었습니다. 관리자 확인 후 등급이 변경됩니다. (데모)');
+  fetch('/mypage/grade-upgrade', { method: 'POST' })
+    .then((res) => {
+      if (!res.ok) throw new Error('grade upgrade request failed');
+      alert('등업 신청이 접수되었습니다. 관리자 확인 후 등급이 변경됩니다.');
+    })
+    .catch(() => {
+      alert('등업 신청 중 오류가 발생했습니다.');
+    });
 });
 
 // 취향(관심 장르) 선택 - 서버가 th:classappend로 미리 체크해둔 상태(selected)를 기준으로

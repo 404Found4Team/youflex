@@ -35,9 +35,9 @@ public class MemberService {
 
     public void join(MemberDTO memberDTO, List<Integer> genreCategoryIds) {
         // 해시 없이 입력한 비밀번호를 그대로 저장(요청에 따라 해시 제거함 - 보안상 실서비스에는 부적합)
-        // 폼으로 넘어온 값과 무관하게 항상 일반회원으로 고정(관리자 자가 승격 방지).
-        // DB에는 member_role이 따로 없고 member_grade(ENUM '일반'/'우수'/'관리자')가 그 역할을 함.
-        memberDTO.setMemberGrade("일반");
+        // 폼으로 넘어온 값과 무관하게 항상 일반회원(시청자)으로 고정(관리자 자가 승격 방지).
+        // DB에는 member_role이 따로 없고 member_grade(ENUM '시청자'/'평론가'/'관리자')가 그 역할을 함.
+        memberDTO.setMemberGrade("시청자");
         memberMapper.insertMember(memberDTO); // useGeneratedKeys로 memberDTO.memberId가 채워짐
 
         if (genreCategoryIds == null || genreCategoryIds.isEmpty()) {
@@ -74,6 +74,11 @@ public class MemberService {
     // 취향 선택 모달의 초기 체크 표시용 - 현재 선택되어 있는 장르 id 목록 조회
     public List<Integer> getMemberGenreCategoryIds(int memberId) {
         return preferenceMappingMapper.selectGenreCategoryIdsByMemberId(memberId);
+    }
+
+    // 마이페이지 - 등업신청 버튼. 조건 검증 없이 접수만 하고, 승인/반려는 관리자가 수동으로 처리(등업신청 관리 화면).
+    public void requestGradeUpgrade(int memberId) {
+        memberMapper.requestGradeUpgrade(memberId);
     }
 
     // 취향 장르 변경 - 기존 선택을 전부 지우고 이번에 고른 것만 다시 저장(교체 방식)
