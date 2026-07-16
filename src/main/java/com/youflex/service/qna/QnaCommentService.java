@@ -35,6 +35,27 @@ public class QnaCommentService {
     }
 
     /**
+     * 댓글 수정
+     * - 댓글 존재 여부 확인 후, 요청자가 작성자 본인인지 검증
+     * @param qnaCommentId 수정할 댓글 ID
+     * @param newContent 수정할 내용
+     * @param requesterMemberId 수정을 요청한 회원 ID
+     * @throws IllegalArgumentException 댓글이 존재하지 않을 경우
+     * @throws IllegalStateException 요청자가 작성자 본인이 아닐 경우
+     */
+    public void updateComment(int qnaCommentId, String newContent, int requesterMemberId) {
+        QnaCommentDTO comment = qnaCommentMapper.selectCommentById(qnaCommentId);
+        if (comment == null) {
+            throw new IllegalArgumentException("존재하지 않는 댓글입니다.");
+        }
+        if (comment.getMemberId() != requesterMemberId) {
+            throw new IllegalStateException("수정 권한이 없습니다.");
+        }
+        comment.setQnaCommentContent(newContent);
+        qnaCommentMapper.updateComment(comment);
+    }
+
+    /**
      * 댓글 삭제
      * - 댓글 존재 여부 확인 후, 요청자가 작성자 본인인지 검증
      * - 관리자 권한에 의한 삭제(작성자가 아니어도 삭제 가능한 케이스)는

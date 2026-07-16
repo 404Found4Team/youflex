@@ -82,7 +82,7 @@ public class QnaController {
      * @param qnaId 수정할 질문 ID (경로 변수)
      * @param qnaDTO 수정할 내용을 담은 요청 바디
      * @param session 로그인 세션
-     * @return 수정 성공 시 200 OK, 미로그인 시 401, 본인이 아니면 403
+     * @return 수정 성공 시 200 OK, 미로그인 시 401, 존재하지 않으면 404, 본인이 아니면 403
      */
     @PutMapping("/{qnaId}")
     public ResponseEntity<Void> updateQna(@PathVariable("qnaId") int qnaId, @RequestBody QnaDTO qnaDTO,
@@ -93,10 +93,14 @@ public class QnaController {
         }
         // 경로 변수의 qnaId를 DTO에 강제로 세팅하여 요청 바디 값과의 불일치 방지
         qnaDTO.setQnaId(qnaId);
-        // TODO: qnaService 쪽에서 기존 글의 memberId와 loginMember.getMemberId()가 일치하는지
-        // 확인하는 로직 필요 (현재는 로그인 여부만 체크, 작성자 본인 여부는 미검증)
-        qnaService.updateQna(qnaDTO);
-        return ResponseEntity.ok().build();
+        try {
+            qnaService.updateQna(qnaDTO, loginMember.getMemberId());
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
     }
 
     /**
@@ -150,6 +154,32 @@ public class QnaController {
         commentDTO.setMemberId(loginMember.getMemberId());
         qnaCommentService.addComment(commentDTO);
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    /**
+     * 댓글 수정
+     * - 로그인한 회원만 가능. 작성자 본인 여부는 QnaCommentService에서 검증
+     * @param qnaCommentId 수정할 댓글 ID
+     * @param commentDTO 수정할 내용을 담은 요청 바디 (qnaCommentContent만 사용)
+     * @param session 로그인 세션
+     * @return 수정 성공 시 200 OK, 미로그인 시 401, 존재하지 않으면 404, 본인이 아니면 403
+     */
+    @PutMapping("/comments/{qnaCommentId}")
+    public ResponseEntity<Void> updateComment(@PathVariable("qnaCommentId") int qnaCommentId,
+                                               @RequestBody QnaCommentDTO commentDTO,
+                                               HttpSession session) {
+        MemberDTO loginMember = (MemberDTO) session.getAttribute("loginMember");
+        if (loginMember == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        try {
+            qnaCommentService.updateComment(qnaCommentId, commentDTO.getQnaCommentContent(), loginMember.getMemberId());
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
     }
 
     /**

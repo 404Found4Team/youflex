@@ -9,5 +9,6 @@ public interface QnaCommentMapper {
     List<QnaCommentDTO> selectCommentsByQnaId(int qnaId);
     void insertComment(QnaCommentDTO commentDTO);
     QnaCommentDTO selectCommentById(int qnaCommentId);
+    void updateComment(QnaCommentDTO commentDTO);
     void deleteComment(int qnaCommentId);
 }

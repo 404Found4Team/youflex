@@ -11,4 +11,4 @@
 .visibility-option input { width:auto; accent-color:var(--accent); } /* common.css의 .form-row input이 width:100%를 강제하므로, 라디오 버튼만 원래 크기로 되돌림 */
 
 /* 하단 "취소 / 수정 완료" 버튼 줄 */
-.edit-toolbar { display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; }
+.update-toolbar { display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; }
