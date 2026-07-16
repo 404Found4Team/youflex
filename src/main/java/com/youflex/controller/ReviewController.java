@@ -1,5 +1,6 @@
 package com.youflex.controller;
 
+import com.youflex.service.GenreCategoryService;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -26,11 +27,14 @@ import lombok.RequiredArgsConstructor;
 public class ReviewController {
 //	중괄호 짝 찾기 : ctrl+shift+p
 	
+	private final GenreCategoryService genreCategoryService;
 	private final ReviewService reviewService;
+	
 	
 //	application.properties의 youflex.upload.path값을 가져옴
 	@Value("${youflex.upload.path}")
 	private String uploadPath;
+
 	
 //	1) 작성 폼으로 이동
 	@GetMapping("/review/write")
@@ -39,6 +43,10 @@ public class ReviewController {
 		if(session.getAttribute("loginMember") == null) {
 			return "redirect:/login";
 		}
+		
+		// 모달에서 선택한 취향을 genre_category 테이블로 넘기기
+		model.addAttribute("genres", genreCategoryService.getAllGenres());
+		
 		return "review/write";
 	}
 	
@@ -56,12 +64,7 @@ public class ReviewController {
 //		ReviewDTO에 작성자 번호(memberId) 설정
 		reviewDTO.setMemberId(loginMember.getMemberId());
 //		System.out.println(reviewDTO.getMemberId());
-		
-//		취향 선택 모달을 genre_category 테이블 값으로 채우기 위해 목록을 같이 넘김
-		public String writeForm(Model model) {
-			model.addAttribute("genres", genreCategorySer)
-		}
-		
+
 		if(reviewDTO.getImgFile() != null && !reviewDTO.getImgFile().isEmpty()) {
 //			파일 저장 후 DB에 저장할 파일명을 reviewDTO에 세팅
 			String savedFileName = saveFile(reviewDTO.getImgFile());
@@ -74,6 +77,7 @@ public class ReviewController {
 //		저장 완료 후 메인 화면으로 이동
 		return "redirect:/";
 	}
+
 //	----- 파일 저장 메서드 -----
 //	반환값 : DB에 저장할 새 파일명(UUID기반)
 	private String saveFile(MultipartFile file) throws IOException{
