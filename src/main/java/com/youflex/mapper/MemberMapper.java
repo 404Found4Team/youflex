@@ -31,6 +31,9 @@ public interface MemberMapper {
     // 회원 목록 검색결과 총 개수(페이지네이션 계산용)
     int countMembers(@Param("keyword") String keyword);
 
+    // 마이페이지 - 등업신청 버튼 클릭 시 상태를 '신청'으로 전환(관리자 등업신청 관리 화면에 노출됨)
+    void requestGradeUpgrade(int memberId);
+
     // 관리자 - 등업(우수회원) 신청 대기 목록
     List<MemberDTO> findGradeUpgradeRequests();
 

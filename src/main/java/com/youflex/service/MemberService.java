@@ -76,6 +76,11 @@ public class MemberService {
         return preferenceMappingMapper.selectGenreCategoryIdsByMemberId(memberId);
     }
 
+    // 마이페이지 - 등업신청 버튼. 조건 검증 없이 접수만 하고, 승인/반려는 관리자가 수동으로 처리(등업신청 관리 화면).
+    public void requestGradeUpgrade(int memberId) {
+        memberMapper.requestGradeUpgrade(memberId);
+    }
+
     // 취향 장르 변경 - 기존 선택을 전부 지우고 이번에 고른 것만 다시 저장(교체 방식)
     public void updateGenrePreferences(int memberId, List<Integer> genreCategoryIds) {
         preferenceMappingMapper.deletePreferencesByMemberId(memberId);
