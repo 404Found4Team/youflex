@@ -76,6 +76,8 @@ public class ReviewController {
 //		게시글 저장
 		reviewService.write(reviewDTO, genreCategoryIds);
 		
+		
+		
 //		저장 완료 후 메인 화면으로 이동
 		return "redirect:/";
 	}
