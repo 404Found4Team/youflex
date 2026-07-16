@@ -5,24 +5,24 @@
   <title>YouFlex</title>
 </head>
 <body>
-   
-   <!--  
-     ==================================
-     공통 헤더바  
-     ==================================
-     -->
-   <header class="site-header" th:fragment="header">
-     <div class="container">
-       <a th:href="@{/}" class="logo"><img th:src="@{/img/logo.png}" alt="YouFlex" /></a>
-       <div class="search-bar">
-         <span class="icon">🔍</span>
-         <input type="text" placeholder="콘텐츠, 게시글 통합 검색" />
-      </div>
-      
-      <!-- 비 로그인 시(비회원) -->
-       <div class="header-actions" th:if="${session.loginMember == null}">
-         <a th:href="@{/login}" class="btn btn-ghost">로그인</a>
-       </div>
+	
+	<!--  
+	  ==================================
+	  공통 헤더바  
+	  ==================================
+	  -->
+	<header class="site-header" th:fragment="header">
+	  <div class="container">
+	    <a th:href="@{/}" class="logo"><img th:src="@{/img/logo.png}" alt="YouFlex" /></a>
+	    <div class="search-bar">
+			<span class="icon">🔍</span>
+			<input type="text" placeholder="콘텐츠, 게시글 통합 검색" />
+		</div>
+		
+		<!-- 비 로그인 시(비회원) -->
+	    <div class="header-actions" th:if="${session.loginMember == null}">
+	      <a th:href="@{/login}" class="btn btn-ghost">로그인</a>
+	    </div>
 
 		<!-- 로그인 시(회원) -->
 	    <div class="header-actions" th:unless="${session.loginMember == null}">
