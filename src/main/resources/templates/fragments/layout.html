@@ -184,12 +184,16 @@
   <!-- 1. 목록 패널 -->
   <div class="panel-body" data-tab-panel="list">
     <div id="chatroomListContainer">
-      <div class="room-list-item">
+      <!-- 컨트롤러에서 넘겨준 chatrooms 리스트를 순회 -->
+      <div class="room-list-item" th:each="room : ${chatrooms}">
         <div>
-          <div class="room-name">오늘 개봉작 실시간 토크</div>
-          <div class="room-count">18 / 30명</div>
+          <!-- DTO의 필드명(예: chatroomTitle)을 th:text로 매핑 -->
+          <div class="room-name" th:text="${room.chatroomTitle}"></div>
+          
+          <!-- 파이프(|) 기호를 사용해 문자와 변수를 조합 -->
+          <div class="room-count" th:text="|1 / ${room.chatroomMaxMember}명|"></div>
         </div>
-        <button class="btn btn-primary btn-sm">입장</button>
+        <button class="btn btn-primary btn-sm"></button>
       </div>
     </div>
   </div>
