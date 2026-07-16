@@ -578,9 +578,10 @@
       <div class="panel-tabs" data-tab-panels>
         <button class="active" data-tab-target="list">목록</button>
         <button data-tab-target="chat">채팅</button>
-        <button data-tab-target="create" data-role-visible="critic,admin">
-          개설
-        </button>
+		<button data-tab-target="create"
+		        th:if="${session.loginMember?.memberGrade?.toString() == '우수' or session.loginMember?.memberGrade?.toString() == '관리자'}">
+		      개설
+		 </button>
       </div>
       <div class="panel-body" data-tab-panel="list">
         <div class="room-list-item">
@@ -627,7 +628,8 @@
           <button class="btn btn-primary" id="chatroomSendBtn">전송</button>
         </div>
       </div>
-      <div class="panel-body" data-tab-panel="create" style="display: none">
+      <div class="panel-body" data-tab-panel="create" style="display: none"
+	        th:if="${session.loginMember?.memberGrade?.toString() == '우수' or session.loginMember?.memberGrade?.toString() == '관리자'}">
         <label class="text-muted" style="font-size: 13px">방 이름</label>
         <input
           type="text"
