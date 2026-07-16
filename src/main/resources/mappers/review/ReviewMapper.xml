@@ -24,15 +24,14 @@
 	</insert>
 
 	<insert id="insertReviewGenres">
-		INSERT INTO review_mapping (
-			review_id,
-			genre_category_id
-		) VALUES
-		<foreach collection="genreCategoryIds" item="genreId" separator=",">
-			(
-				#{reviewId}, 
-				#{genreId}
-			)
-		</foreach>
-	</insert>
+    INSERT INTO review_genre_mapping (  review_id,
+        genre_category_id
+    ) VALUES
+    <foreach collection="genreCategoryIds" item="genreId" separator=",">
+        (
+            #{reviewId}, 
+            #{genreId}
+        )
+    </foreach>
+</insert>
 </mapper>
