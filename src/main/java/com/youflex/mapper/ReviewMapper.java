@@ -13,6 +13,9 @@ public interface ReviewMapper {
 	// 게시글 작성(INSERT)
 	void write(ReviewDTO reviewDTO);
 	
+	// 선택한 관심 장르들을 저장
+	int insertReviewGenres(@Param("reviewId") int reviewId, @Param("genreCategoryIds") List<Integer> genreCategoryIds);
+	
 	// 전체 게시글 목록 조회
 	// 검색 + 페이징 게시글 목록 조회
 	// -@Param : 파라미터가 여러 개이므로 XML에서 이름으로 구별하기 위해 붙임
