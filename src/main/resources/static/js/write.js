@@ -40,6 +40,16 @@ document.getElementById('genreSaveBtn').addEventListener('click', () => {
   document.getElementById('genreModalBackdrop').classList.remove('open');
   alert(`선택된 취향: [${selectedGenres.join(', ')}]이 저장되었습니다.`);
 });
+document.getElementById('genreSaveBtn').addEventListener('click', () => {
+  // 현재 선택된 장르 수집 (데모 혹은 실제 데이터 반영용)
+  const selectedGenres = [];
+  document.querySelectorAll('.genre-chip.selected').forEach(chip => {
+    selectedGenres.push(chip.getAttribute('data-genre'));
+  });
+  
+  document.getElementById('genreModalBackdrop').classList.remove('open');
+  alert(`선택된 취향: [${selectedGenres.join(', ')}]이 저장되었습니다.`);
+});
 
 
 

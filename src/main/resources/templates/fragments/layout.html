@@ -1,5 +1,9 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>YouFlex</title>
+</head>
 <body>
 	
 	<!--  
@@ -17,7 +21,6 @@
 		
 		<!-- 비 로그인 시(비회원) -->
 	    <div class="header-actions" th:if="${session.loginMember == null}">
-	      <!-- MemberController /login, /logout 으로 연결 (로그아웃은 세션 무효화 후 메인으로 리다이렉트) -->
 	      <a th:href="@{/login}" class="btn btn-ghost">로그인</a>
 	    </div>
 
@@ -50,8 +53,8 @@
       <li><a th:href="@{#}" data-nav="tving">티빙</a></li>
       <li><a th:href="@{#}" data-nav="disney">디즈니플러스</a></li>
       <li><a th:href="@{#}" data-nav="etc">기타</a></li>
-      <li style="margin-left:auto"><a th:href="@{#}" data-nav="notice">공지사항</a></li>
-      <li><a th:href="@{#}" data-nav="qna">Q&A</a></li>
+      <li style="margin-left:auto"><a th:href="@{/notice}" data-nav="notice">공지사항</a></li>
+      <li><a th:href="@{/notice#qna}" data-nav="qna">Q&A</a></li>
     </ul>
   </div>
 </nav>
@@ -105,7 +108,6 @@
   -->
 <aside class="slide-panel" id="notificationPanel">
   <div class="panel-header"><h3>🔔 알림</h3><button class="panel-close" id="notificationClose">✕</button></div>
-  <!-- 알림 내용 -->
   <div class="panel-body">
     <div class="notification-item">
       <span class="notification-icon">⚠</span>
@@ -122,7 +124,7 @@
       </div>
     </div>
     <div class="notification-item">
-      <span class="notification-icon">📝</span>
+      <span class="notification-icon">💬</span>
       <div>
         <div class="notification-text">내 게시글 "「오징어게임 3」, 이대로 끝내도 되는가"에 새 댓글이 달렸습니다.</div>
         <div class="notification-time">어제</div>
@@ -167,18 +169,35 @@
 <div class="overlay-backdrop" id="chatroomBackdrop"></div>
 <aside class="slide-panel" id="chatroomPanel">
   <div class="panel-header"><h3>💬 커뮤니티 채팅</h3><button class="panel-close" id="chatroomClose">✕</button></div>
+  
+  <!-- 탭 영역: '개설' 탭은 우수(평론가) 등급 또는 관리자에게만 노출 -->
   <div class="panel-tabs" data-tab-panels>
     <button class="active" data-tab-target="list">목록</button>
     <button data-tab-target="chat">채팅</button>
-    <button data-tab-target="create" data-role-visible="critic,admin">개설</button>
+    <button data-tab-target="create"
+            th:if="${session.loginMember != null and (session.loginMember.memberGrade == '우수' or session.loginMember.memberGrade == '관리자')}">
+      개설
+    </button>
   </div>
+  
+  <!-- 1. 목록 패널 -->
   <div class="panel-body" data-tab-panel="list">
-    <div class="room-list-item"><div><div class="room-name">오늘 개봉작 실시간 토크</div><div class="room-count">18 / 30명</div></div><button class="btn btn-primary btn-sm">입장</button></div>
+    <div id="chatroomListContainer">
+      <div class="room-list-item">
+        <div>
+          <div class="room-name">오늘 개봉작 실시간 토크</div>
+          <div class="room-count">18 / 30명</div>
+        </div>
+        <button class="btn btn-primary btn-sm">입장</button>
+      </div>
+    </div>
   </div>
+  
+  <!-- 2. 채팅 메시지 패널 -->
   <div class="panel-body" data-tab-panel="chat" style="display:none;padding:0">
     <div class="chatroom-title">
       <span>💬 오늘 개봉작 실시간 토크</span>
-      <button class="btn btn-sm btn-danger" data-role-visible="critic,admin" onclick="giveChatWarning()">⚠ 경고 부여</button>
+      <button class="btn btn-sm btn-danger" onclick="giveChatWarning()">⚠ 경고 부여</button>
     </div>
     <div class="chatroom-messages" id="chatroomMessages">
       <div class="chat-msg system">‘영화광123’님이 입장했습니다</div>
@@ -190,16 +209,15 @@
       <button class="btn btn-primary" id="chatroomSendBtn">전송</button>
     </div>
   </div>
-  <div class="panel-body" data-tab-panel="create" style="display:none">
+  <!-- 3. 개설 패널: '우수' 또는 '관리자' 등급만 렌더링 -->
+  <div class="panel-body" data-tab-panel="create"
+       th:if="${session.loginMember != null and (session.loginMember.memberGrade == '우수' or session.loginMember.memberGrade == '관리자')}">
     <label class="text-muted" style="font-size:13px">방 이름</label>
-    <input type="text" id="chatroom_title" name="chatroom_title" style="background:var(--bg-2);border:1px solid var(--border);border-radius:6px;padding:10px;color:#fff" />
+    <input type="text" id="chatroom_title" name="chatroom_title" style="background:var(--bg-2);border:1px solid var(--border);border-radius:6px;padding:10px;color:#fff;width:100%;box-sizing:border-box;margin-bottom:12px" />
     <label class="text-muted" style="font-size:13px">최대 인원</label>
-    <input type="number" id="chatroom_max_member" name="chatroom_max_member" min="2" max="30" value="10" style="background:var(--bg-2);border:1px solid var(--border);border-radius:6px;padding:10px;color:#fff" />
-    <button class="btn btn-primary mt-24" id="chatroomCreateBtn">채팅방 개설</button>
+    <input type="number" id="chatroom_max_member" name="chatroom_max_member" min="2" max="30" value="10" style="background:var(--bg-2);border:1px solid var(--border);border-radius:6px;padding:10px;color:#fff;width:100%;box-sizing:border-box" />
+    <button class="btn btn-primary mt-24" id="chatroomCreateBtn" style="width:100%">채팅방 개설</button>
   </div>
 </aside>
-
-
-
 </body>	
 </html>

@@ -64,7 +64,6 @@ public class ReviewController {
 //		ReviewDTO에 작성자 번호(memberId) 설정
 		reviewDTO.setMemberId(loginMember.getMemberId());
 //		System.out.println(reviewDTO.getMemberId());
-
 		if(reviewDTO.getImgFile() != null && !reviewDTO.getImgFile().isEmpty()) {
 //			파일 저장 후 DB에 저장할 파일명을 reviewDTO에 세팅
 			String savedFileName = saveFile(reviewDTO.getImgFile());
@@ -77,7 +76,6 @@ public class ReviewController {
 //		저장 완료 후 메인 화면으로 이동
 		return "redirect:/";
 	}
-
 //	----- 파일 저장 메서드 -----
 //	반환값 : DB에 저장할 새 파일명(UUID기반)
 	private String saveFile(MultipartFile file) throws IOException{
