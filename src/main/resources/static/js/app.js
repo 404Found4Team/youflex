@@ -19,55 +19,55 @@ function applyRoleVisibility() {
 
 // ---- 오버레이 패널 (챗봇 / 채팅방) ----
 function initOverlay(panelId, backdropId, openTriggerIds, closeTriggerIds, bodyClass, toggleOnTrigger) {
-  const panel = document.getElementById(panelId);
-  const backdrop = document.getElementById(backdropId);
-  if (!panel) return;
+    const panel = document.getElementById(panelId);
+    const backdrop = document.getElementById(backdropId);
+    if (!panel) return;
 
-  const open = () => {
-    panel.classList.add("open");
-    backdrop && backdrop.classList.add("open");
-    if (bodyClass) document.body.classList.add(bodyClass);
-  };
-  const close = () => {
-    panel.classList.remove("open");
-    backdrop && backdrop.classList.remove("open");
-    if (bodyClass) document.body.classList.remove(bodyClass);
-  };
+    const open = () => {
+        panel.classList.add("open");
+        backdrop && backdrop.classList.add("open");
+        if (bodyClass) document.body.classList.add(bodyClass);
+    };
+    const close = () => {
+        panel.classList.remove("open");
+        backdrop && backdrop.classList.remove("open");
+        if (bodyClass) document.body.classList.remove(bodyClass);
+    };
 
-  openTriggerIds.forEach((id) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener("click", () => {
-      if (toggleOnTrigger && panel.classList.contains("open")) close();
-      else open();
+    openTriggerIds.forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener("click", () => {
+            if (toggleOnTrigger && panel.classList.contains("open")) close();
+            else open();
+        });
     });
-  });
-  closeTriggerIds.forEach((id) => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener("click", close);
-  });
-  backdrop && backdrop.addEventListener("click", close);
+    closeTriggerIds.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener("click", close);
+    });
+    backdrop && backdrop.addEventListener("click", close);
 }
 
 // ---- 탭 전환 공통 ----
 function initTabs(tabGroupSelector) {
-  document.querySelectorAll(tabGroupSelector).forEach((group) => {
-    const buttons = group.querySelectorAll("[data-tab-target]");
-    buttons.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const targetSelector = btn.dataset.tabTarget;
-        const tabContainer = btn.closest("[data-tab-panels]");
-        const panelGroup = (tabContainer && tabContainer.parentElement) || document;
-        const panels = panelGroup.querySelectorAll("[data-tab-panel]");
+    document.querySelectorAll(tabGroupSelector).forEach((group) => {
+        const buttons = group.querySelectorAll("[data-tab-target]");
+        buttons.forEach((btn) => {
+            btn.addEventListener("click", () => {
+                const targetSelector = btn.dataset.tabTarget;
+                const tabContainer = btn.closest("[data-tab-panels]");
+                const panelGroup = (tabContainer && tabContainer.parentElement) || document;
+                const panels = panelGroup.querySelectorAll("[data-tab-panel]");
 
-        buttons.forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
-        panels.forEach((p) => {
-         p.style.display = p.dataset.tabPanel === targetSelector ? "" : "none";
+                buttons.forEach((b) => b.classList.remove("active"));
+                btn.classList.add("active");
+                panels.forEach((p) => {
+                    p.style.display = p.dataset.tabPanel === targetSelector ? "" : "none";
+                });
+            });
         });
-      });
     });
-  });
 }
 
 // ==========================================================================
@@ -75,414 +75,479 @@ function initTabs(tabGroupSelector) {
 // ==========================================================================
 const QNA_QUIZ_DAILY_LIMIT = 3;
 const QNA_QUIZ_QUESTION_BANK = {
-  mc: [
-    { question: '「오징어게임」은 어느 플랫폼의 오리지널 시리즈일까요?', options: ['디즈니플러스', '넷플릭스', '티빙', '웨이브'], answerIndex: 1 },
-    { question: '다음 중 국내 OTT 플랫폼이 아닌 것은?', options: ['티빙', '웨이브', '쿠팡플레이', 'HBO'], answerIndex: 3 },
-    { question: '「무빙」은 어느 플랫폼에서 방영되었을까요?', options: ['디즈니플러스', '넷플릭스', '티빙', '왓챠'], answerIndex: 0 },
-  ],
-  ox: [
-    { question: '티빙(TVING)은 CJ ENM이 운영하는 국내 OTT 서비스이다.', answer: true },
-    { question: '디즈니플러스는 국내 오리지널 콘텐츠를 전혀 제작하지 않는다.', answer: false },
-    { question: '넷플릭스는 광고 요금제를 제공한 적이 없다.', answer: false },
-  ],
+    mc: [
+        { question: '「오징어게임」은 어느 플랫폼의 오리지널 시리즈일까요?', options: ['디즈니플러스', '넷플릭스', '티빙', '웨이브'], answerIndex: 1 },
+        { question: '다음 중 국내 OTT 플랫폼이 아닌 것은?', options: ['티빙', '웨이브', '쿠팡플레이', 'HBO'], answerIndex: 3 },
+        { question: '「무빙」은 어느 플랫폼에서 방영되었을까요?', options: ['디즈니플러스', '넷플릭스', '티빙', '왓챠'], answerIndex: 0 },
+    ],
+    ox: [
+        { question: '티빙(TVING)은 CJ ENM이 운영하는 국내 OTT 서비스이다.', answer: true },
+        { question: '디즈니플러스는 국내 오리지널 콘텐츠를 전혀 제작하지 않는다.', answer: false },
+        { question: '넷플릭스는 광고 요금제를 제공한 적이 없다.', answer: false },
+    ],
 };
 
 function qnaQuizTodayKey() {
-  const now = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
 function qnaQuizAttemptsLeft() {
-  const today = qnaQuizTodayKey();
-  if (localStorage.getItem('qnaQuizDate') !== today) {
-    localStorage.setItem('qnaQuizDate', today);
-    localStorage.setItem('qnaQuizAttemptsLeft', String(QNA_QUIZ_DAILY_LIMIT));
-  }
-  return Number(localStorage.getItem('qnaQuizAttemptsLeft') || QNA_QUIZ_DAILY_LIMIT);
+    const today = qnaQuizTodayKey();
+    if (localStorage.getItem('qnaQuizDate') !== today) {
+        localStorage.setItem('qnaQuizDate', today);
+        localStorage.setItem('qnaQuizAttemptsLeft', String(QNA_QUIZ_DAILY_LIMIT));
+    }
+    return Number(localStorage.getItem('qnaQuizAttemptsLeft') || QNA_QUIZ_DAILY_LIMIT);
 }
 
 function qnaQuizUseAttempt() {
-  const left = Math.max(0, qnaQuizAttemptsLeft() - 1);
-  localStorage.setItem('qnaQuizAttemptsLeft', String(left));
-  return left;
+    const left = Math.max(0, qnaQuizAttemptsLeft() - 1);
+    localStorage.setItem('qnaQuizAttemptsLeft', String(left));
+    return left;
 }
 
 function qnaQuizPickRandom(list) {
-  return list[Math.floor(Math.random() * list.length)];
+    return list[Math.floor(Math.random() * list.length)];
 }
 
 function initQnaChatbotQuiz() {
-  const startBtn = document.getElementById('qnaQuizStartBtn');
-  const countLabel = document.getElementById('qnaQuizCount');
-  const playBox = document.getElementById('qnaQuizPlay');
-  const progressLabel = document.getElementById('qnaQuizProgress');
-  const questionLabel = document.getElementById('qnaQuizQuestion');
-  const optionsBox = document.getElementById('qnaQuizOptions');
-  const nextBtn = document.getElementById('qnaQuizNextBtn');
-  const resultBox = document.getElementById('qnaQuizResult');
-  if (!startBtn) return;
+    const startBtn = document.getElementById('qnaQuizStartBtn');
+    const countLabel = document.getElementById('qnaQuizCount');
+    const playBox = document.getElementById('qnaQuizPlay');
+    const progressLabel = document.getElementById('qnaQuizProgress');
+    const questionLabel = document.getElementById('qnaQuizQuestion');
+    const optionsBox = document.getElementById('qnaQuizOptions');
+    const nextBtn = document.getElementById('qnaQuizNextBtn');
+    const resultBox = document.getElementById('qnaQuizResult');
+    if (!startBtn) return;
 
-  let questions = [];
-  let step = 0;
-  let correctCount = 0;
+    let questions = [];
+    let step = 0;
+    let correctCount = 0;
 
-  function renderCount() {
-    const left = qnaQuizAttemptsLeft();
-    countLabel.textContent = `🎯 오늘 남은 퀴즈 횟수: ${left}/${QNA_QUIZ_DAILY_LIMIT}`;
-    startBtn.disabled = left <= 0;
-    startBtn.textContent = left <= 0 ? '오늘 퀴즈를 모두 사용했어요' : '퀴즈 시작';
-  }
+    function renderCount() {
+        const left = qnaQuizAttemptsLeft();
+        countLabel.textContent = `🎯 오늘 남은 퀴즈 횟수: ${left}/${QNA_QUIZ_DAILY_LIMIT}`;
+        startBtn.disabled = left <= 0;
+        startBtn.textContent = left <= 0 ? '오늘 퀴즈를 모두 사용했어요' : '퀴즈 시작';
+    }
 
-  function renderQuestion() {
-    const q = questions[step];
-    progressLabel.textContent = `문제 ${step + 1}/${questions.length} · ${q.type === 'mc' ? '객관식' : 'OX'}`;
-    questionLabel.textContent = q.question;
-    optionsBox.innerHTML = '';
-    nextBtn.style.display = 'none';
+    function renderQuestion() {
+        const q = questions[step];
+        progressLabel.textContent = `문제 ${step + 1}/${questions.length} · ${q.type === 'mc' ? '객관식' : 'OX'}`;
+        questionLabel.textContent = q.question;
+        optionsBox.innerHTML = '';
+        nextBtn.style.display = 'none';
 
-    const choices = q.type === 'mc'
-      ? q.options.map((label, i) => ({ label, correct: i === q.answerIndex }))
-      : [{ label: 'O', correct: q.answer === true }, { label: 'X', correct: q.answer === false }];
+        const choices = q.type === 'mc'
+            ? q.options.map((label, i) => ({ label, correct: i === q.answerIndex }))
+            : [{ label: 'O', correct: q.answer === true }, { label: 'X', correct: q.answer === false }];
 
-    choices.forEach((choice) => {
-      const btn = document.createElement('button');
-      btn.textContent = choice.label;
-      btn.dataset.correct = String(choice.correct);
-      btn.addEventListener('click', () => {
-        Array.from(optionsBox.children).forEach((b) => (b.disabled = true));
-        if (choice.correct) {
-          btn.classList.add('correct');
-          correctCount += 1;
-        } else {
-          btn.classList.add('wrong');
-          const correctBtn = Array.from(optionsBox.children).find((b) => b.dataset.correct === 'true');
-          if (correctBtn) correctBtn.classList.add('correct');
-        }
-        if (step < questions.length - 1) {
-          nextBtn.style.display = 'inline-block';
-        } else {
-          finishQuiz();
-        }
-      });
-      optionsBox.appendChild(btn);
+        choices.forEach((choice) => {
+            const btn = document.createElement('button');
+            btn.textContent = choice.label;
+            btn.dataset.correct = String(choice.correct);
+            btn.addEventListener('click', () => {
+                Array.from(optionsBox.children).forEach((b) => (b.disabled = true));
+                if (choice.correct) {
+                    btn.classList.add('correct');
+                    correctCount += 1;
+                } else {
+                    btn.classList.add('wrong');
+                    const correctBtn = Array.from(optionsBox.children).find((b) => b.dataset.correct === 'true');
+                    if (correctBtn) correctBtn.classList.add('correct');
+                }
+                if (step < questions.length - 1) {
+                    nextBtn.style.display = 'inline-block';
+                } else {
+                    finishQuiz();
+                }
+            });
+            optionsBox.appendChild(btn);
+        });
+    }
+
+    function finishQuiz() {
+        const left = qnaQuizUseAttempt();
+        playBox.style.display = 'none';
+        resultBox.style.display = 'block';
+        resultBox.textContent = `✅ 2문제 중 ${correctCount}문제를 맞히셨어요! (오늘 남은 횟수 ${left}/${QNA_QUIZ_DAILY_LIMIT})`;
+        renderCount();
+    }
+
+    startBtn.addEventListener('click', () => {
+        if (qnaQuizAttemptsLeft() <= 0) return;
+        questions = [
+            Object.assign({ type: 'mc' }, qnaQuizPickRandom(QNA_QUIZ_QUESTION_BANK.mc)),
+            Object.assign({ type: 'ox' }, qnaQuizPickRandom(QNA_QUIZ_QUESTION_BANK.ox)),
+        ];
+        step = 0;
+        correctCount = 0;
+        resultBox.style.display = 'none';
+        playBox.style.display = 'block';
+        renderQuestion();
     });
-  }
 
-  function finishQuiz() {
-    const left = qnaQuizUseAttempt();
-    playBox.style.display = 'none';
-    resultBox.style.display = 'block';
-    resultBox.textContent = `✅ 2문제 중 ${correctCount}문제를 맞히셨어요! (오늘 남은 횟수 ${left}/${QNA_QUIZ_DAILY_LIMIT})`;
+    nextBtn.addEventListener('click', () => {
+        step += 1;
+        renderQuestion();
+    });
+
     renderCount();
-  }
-
-  startBtn.addEventListener('click', () => {
-    if (qnaQuizAttemptsLeft() <= 0) return;
-    questions = [
-      Object.assign({ type: 'mc' }, qnaQuizPickRandom(QNA_QUIZ_QUESTION_BANK.mc)),
-      Object.assign({ type: 'ox' }, qnaQuizPickRandom(QNA_QUIZ_QUESTION_BANK.ox)),
-    ];
-    step = 0;
-    correctCount = 0;
-    resultBox.style.display = 'none';
-    playBox.style.display = 'block';
-    renderQuestion();
-  });
-
-  nextBtn.addEventListener('click', () => {
-    step += 1;
-    renderQuestion();
-  });
-
-  renderCount();
 }
 
 // ---- 방장(평론가) 퇴장 시 채팅방 삭제 경고 ----
 function confirmRoomLeave() {
-  const ok = confirm(
-    "방장이 퇴장하면 채팅방이 삭제되고 대화 내용이 모두 사라집니다.\n정말 퇴장하시겠습니까?"
-  );
-  if (ok) {
-    alert("채팅방이 삭제되었습니다. (데모)");
-  }
+    const ok = confirm(
+        "방장이 퇴장하면 채팅방이 삭제되고 대화 내용이 모두 사라집니다.\n정말 퇴장하시겠습니까?"
+    );
+    if (ok) {
+        alert("채팅방이 삭제되었습니다. (데모)");
+    }
 }
 
 // ---- 채팅방: 방장(평론가/관리자)의 채팅 내 경고 부여 ----
 function giveChatWarning() {
-  const name = prompt("경고를 부여할 사용자의 닉네임을 입력하세요.");
-  if (!name || !name.trim()) return;
-  const messages = document.getElementById("chatroomMessages");
-  if (!messages) return;
-  const msg = document.createElement("div");
-  msg.className = "chat-msg system warning";
-  msg.textContent = `⚠ ${name.trim()}님 경고 1회`;
-  messages.appendChild(msg);
-  messages.scrollTop = messages.scrollHeight;
+    const name = prompt("경고를 부여할 사용자의 닉네임을 입력하세요.");
+    if (!name || !name.trim()) return;
+    const messages = document.getElementById("chatroomMessages");
+    if (!messages) return;
+    const msg = document.createElement("div");
+    msg.className = "chat-msg system warning";
+    msg.textContent = `⚠ ${name.trim()}님 경고 1회`;
+    messages.appendChild(msg);
+    messages.scrollTop = messages.scrollHeight;
 }
 
 // ---- 퀴즈 인터랙션 (챗봇 패널) ----
 function initQuiz() {
-  document.querySelectorAll(".quiz-options button").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const options = btn.parentElement.querySelectorAll("button");
-      const isCorrect = btn.dataset.correct === "true";
-      options.forEach((o) => (o.disabled = true));
-      btn.classList.add(isCorrect ? "correct" : "wrong");
-      if (!isCorrect) {
-        const correctBtn = Array.from(options).find((o) => o.dataset.correct === "true");
-        correctBtn && correctBtn.classList.add("correct");
-      }
+    document.querySelectorAll(".quiz-options button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const options = btn.parentElement.querySelectorAll("button");
+            const isCorrect = btn.dataset.correct === "true";
+            options.forEach((o) => (o.disabled = true));
+            btn.classList.add(isCorrect ? "correct" : "wrong");
+            if (!isCorrect) {
+                const correctBtn = Array.from(options).find((o) => o.dataset.correct === "true");
+                correctBtn && correctBtn.classList.add("correct");
+            }
+        });
     });
-  });
 }
 
 // ---- 퀴즈 시작 버튼 (챗봇 패널) ----
 function initQuizStart() {
-  const startBtn = document.getElementById("quizStartBtn");
-  const options = document.getElementById("quizOptions");
-  if (!startBtn || !options) return;
-  startBtn.addEventListener("click", () => {
-    options.style.display = "grid";
-    startBtn.disabled = true;
-  });
+    const startBtn = document.getElementById("quizStartBtn");
+    const options = document.getElementById("quizOptions");
+    if (!startBtn || !options) return;
+    startBtn.addEventListener("click", () => {
+        options.style.display = "grid";
+        startBtn.disabled = true;
+    });
+}
+
+// ==========================================================================
+// 채팅방 목록: 렌더링 + 초기 조회(fetch) + 실시간 반영(WebSocket/STOMP)
+// ==========================================================================
+
+// ---- 채팅방 목록을 화면에 그리는 공통 함수 ----
+function renderChatroomList(rooms) {
+    const listContainer = document.getElementById("chatroomListContainer");
+    if (!listContainer) return;
+
+    listContainer.innerHTML = "";
+
+    if (!rooms || rooms.length === 0) {
+        listContainer.innerHTML = `<div class="text-muted" style="padding:16px;text-align:center">개설된 채팅방이 없습니다.</div>`;
+        return;
+    }
+
+    rooms.forEach((room) => {
+        const item = document.createElement("div");
+        item.className = "room-list-item";
+        item.innerHTML = `
+      <div>
+        <div class="room-name">${room.chatroomTitle}</div>
+        <div class="room-count">${room.currentMemberCount ?? 0} / ${room.chatroomMaxMember}명</div>
+      </div>
+      <button class="btn btn-primary btn-sm" data-room-id="${room.chatroomId}">입장</button>
+    `;
+        listContainer.appendChild(item);
+    });
+}
+
+// ---- 서버에서 채팅방 목록을 최초 1회 받아와 화면에 채움 (STOMP는 과거 메시지를 안 주므로 최초 진입 시 필요) ----
+async function loadChatroomList() {
+    try {
+        const response = await fetch('/api/chatroom');
+        if (!response.ok) return;
+        const rooms = await response.json();
+        renderChatroomList(rooms);
+    } catch (error) {
+        console.error("채팅방 목록 로딩 실패:", error);
+    }
+}
+
+// ---- 웹소켓(STOMP) 연결 및 실시간 목록 구독 ----
+// WebSocketConfig 설정 기준: 접속 엔드포인트 "/ws-connect", 구독 prefix "/sub"
+function initChatroomSocket() {
+    if (typeof SockJS === "undefined" || typeof Stomp === "undefined") {
+        console.warn("SockJS/Stomp 라이브러리가 로드되지 않았습니다. app.js보다 먼저 스크립트를 불러오세요.");
+        return null;
+    }
+
+    const socket = new SockJS('/ws-connect');
+    const stompClient = Stomp.over(socket);
+    stompClient.debug = null; // 콘솔 로그 끄기 (디버깅 시 이 줄 삭제)
+
+    stompClient.connect({}, () => {
+        // 방 개설/삭제 시 서버가 최신 목록을 이 주소로 브로드캐스트함
+        stompClient.subscribe('/sub/chatroom-list', (message) => {
+            const rooms = JSON.parse(message.body);
+            renderChatroomList(rooms);
+        });
+    });
+
+    return stompClient;
 }
 
 // ---- 채팅방: 실시간 채팅 입력/전송 & 방 개설 (실제 비동기 API 연동) ----
 function initChatroomChat() {
-  const messages = document.getElementById("chatroomMessages");
-  const input = document.getElementById("chat_message_content");
-  const sendBtn = document.getElementById("chatroomSendBtn");
-  
-  if (messages && input && sendBtn) {
-    const send = () => {
-      const text = input.value.trim();
-      if (!text) return;
-      const msg = document.createElement("div");
-      msg.className = "chat-msg me";
-      msg.innerHTML = '<div class="avatar"></div><div class="bubble"></div>';
-      msg.querySelector(".bubble").textContent = text;
-      messages.appendChild(msg);
-      input.value = "";
-      messages.scrollTop = messages.scrollHeight;
+    const messages = document.getElementById("chatroomMessages");
+    const input = document.getElementById("chat_message_content");
+    const sendBtn = document.getElementById("chatroomSendBtn");
 
-      setTimeout(() => {
-        const reply = document.createElement("div");
-        reply.className = "chat-msg";
-        reply.innerHTML = '<div class="avatar"></div><div class="bubble"></div>';
-        reply.querySelector(".bubble").textContent = "ㅋㅋㅋ 저도 그렇게 생각해요";
-        messages.appendChild(reply);
-        messages.scrollTop = messages.scrollHeight;
-      }, 900);
-    };
-    sendBtn.addEventListener("click", send);
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") send();
-    });
-  }
+    if (messages && input && sendBtn) {
+        const send = () => {
+            const text = input.value.trim();
+            if (!text) return;
+            const msg = document.createElement("div");
+            msg.className = "chat-msg me";
+            msg.innerHTML = '<div class="avatar"></div><div class="bubble"></div>';
+            msg.querySelector(".bubble").textContent = text;
+            messages.appendChild(msg);
+            input.value = "";
+            messages.scrollTop = messages.scrollHeight;
 
-  // ---- ★ 개설 탭 비동기 기능 통합 ----
-  const roomNameInput = document.getElementById("chatroom_title");
-  const maxUserInput = document.getElementById("chatroom_max_member");
-  const createBtn = document.getElementById("chatroomCreateBtn");
-  
-  if (roomNameInput && maxUserInput && createBtn) {
-    createBtn.addEventListener("click", async () => {
-      const name = roomNameInput.value.trim();
-      const maxUsers = Number(maxUserInput.value);
-      
-      if (!name) {
-        alert("방 이름을 입력해주세요.");
-        return;
-      }
-      if (!maxUsers || maxUsers < 2) {
-        alert("최대 인원은 2명 이상으로 입력해주세요.");
-        return;
-      }
-
-      // 서버 DB 전송용 데이터
-      const requestData = {
-        chatroomTitle: name,
-        chatroomMaxMember: maxUsers
-      };
-
-      try {
-        const response = await fetch('/api/chatroom', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(requestData)
+            setTimeout(() => {
+                const reply = document.createElement("div");
+                reply.className = "chat-msg";
+                reply.innerHTML = '<div class="avatar"></div><div class="bubble"></div>';
+                reply.querySelector(".bubble").textContent = "ㅋㅋㅋ 저도 그렇게 생각해요";
+                messages.appendChild(reply);
+                messages.scrollTop = messages.scrollHeight;
+            }, 900);
+        };
+        sendBtn.addEventListener("click", send);
+        input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") send();
         });
+    }
 
-        if (response.ok) {
-          const chatroomId = await response.json();
-          console.log("생성된 채팅방 ID:", chatroomId);
-          alert(`채팅방이 성공적으로 개설되었습니다!`);
+    // ---- ★ 웹소켓 연결 시작: 페이지 진입 시 미리 구독해둠 ----
+    initChatroomSocket();
 
-          // 1. 채팅방 목록 영역에 신규 방 추가
-          const listContainer = document.getElementById("chatroomListContainer");
-          if (listContainer) {
-            const newRoom = document.createElement("div");
-            newRoom.className = "room-list-item";
-            newRoom.innerHTML = `
-              <div>
-                <div class="room-name">${name}</div>
-                <div class="room-count">1 / ${maxUsers}명</div>
-              </div>
-              <button class="btn btn-primary btn-sm">입장</button>
-            `;
-            listContainer.insertBefore(newRoom, listContainer.firstChild);
-          }
+    // ---- ★ 채팅방 패널을 열 때마다 최초 목록을 서버에서 받아와 채움 ----
+    const chatroomTrigger = document.getElementById("chatroomTrigger");
+    if (chatroomTrigger) {
+        chatroomTrigger.addEventListener("click", loadChatroomList);
+    }
 
-          // 2. 입력 필드 초기화
-          roomNameInput.value = "";
-          maxUserInput.value = "10";
+    // ---- 개설 탭 비동기 기능 ----
+    const roomNameInput = document.getElementById("chatroom_title");
+    const maxUserInput = document.getElementById("chatroom_max_member");
+    const createBtn = document.getElementById("chatroomCreateBtn");
 
-          // 3. 자동으로 '목록' 탭으로 활성화 이동
-          const listTabButton = document.querySelector("[data-tab-target='list']");
-          if (listTabButton) {
-            listTabButton.click();
-          }
+    if (roomNameInput && maxUserInput && createBtn) {
+        createBtn.addEventListener("click", async () => {
+            const name = roomNameInput.value.trim();
+            const maxUsers = Number(maxUserInput.value);
 
-        } else {
-          alert("채팅방 개설에 실패했습니다. (서버 응답 오류)");
-        }
-      } catch (error) {
-        console.error("비동기 통신 중 에러:", error);
-        alert("서버 연결에 실패했습니다. 네트워크 상태를 확인하세요.");
-      }
-    });
-  }
+            if (!name) {
+                alert("방 이름을 입력해주세요.");
+                return;
+            }
+            if (!maxUsers || maxUsers < 2) {
+                alert("최대 인원은 2명 이상으로 입력해주세요.");
+                return;
+            }
+
+            // 서버 DB 전송용 데이터
+            const requestData = {
+                chatroomTitle: name,
+                chatroomMaxMember: maxUsers
+            };
+
+            try {
+                const response = await fetch('/api/chatroom', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (response.ok) {
+                    const chatroomId = await response.json();
+                    console.log("생성된 채팅방 ID:", chatroomId);
+
+                    // ★ 변경: 프론트에서 직접 DOM을 조립하거나 fetch로 목록을 재조회할 필요 없음.
+                    //         서버가 방 개설 성공 시 웹소켓(/sub/chatroom-list)으로 최신 목록을
+                    //         모든 접속자에게 브로드캐스트하므로, 위에서 구독해둔 콜백이
+                    //         자동으로 renderChatroomList를 호출해 화면을 갱신함.
+
+                    // 입력 필드 초기화
+                    roomNameInput.value = "";
+                    maxUserInput.value = "10";
+
+                    // 자동으로 '목록' 탭으로 활성화 이동
+                    const listTabButton = document.querySelector("[data-tab-target='list']");
+                    if (listTabButton) {
+                        listTabButton.click();
+                    }
+
+                } else {
+                    // 서버가 던진 실제 에러 메시지(예: "이미 개설한 채팅방이 있습니다...")를 그대로 표시
+                    const errorMsg = await response.text();
+                    alert(errorMsg || "채팅방 개설에 실패했습니다.");
+                }
+            } catch (error) {
+                console.error("비동기 통신 중 에러:", error);
+                alert("서버 연결에 실패했습니다. 네트워크 상태를 확인하세요.");
+            }
+        });
+    }
 }
 
 // ---- 취향/장르 선택 칩 ----
 function initGenreChips() {
-  document.querySelectorAll(".genre-chip").forEach((chip) => {
-    if (chip.closest("#genreGrid")) return;
-    chip.addEventListener("click", () => chip.classList.toggle("selected"));
-  });
+    document.querySelectorAll(".genre-chip").forEach((chip) => {
+        if (chip.closest("#genreGrid")) return;
+        chip.addEventListener("click", () => chip.classList.toggle("selected"));
+    });
 }
 
 // ---- 드롭다운 메뉴 (마이페이지 등) ----
 function initDropdowns() {
-  document.querySelectorAll("[data-dropdown-trigger]").forEach((trigger) => {
-    const menu = document.getElementById(trigger.dataset.dropdownTrigger);
-    if (!menu) return;
-    trigger.addEventListener("click", (e) => {
-      e.stopPropagation();
-      menu.classList.toggle("open");
+    document.querySelectorAll("[data-dropdown-trigger]").forEach((trigger) => {
+        const menu = document.getElementById(trigger.dataset.dropdownTrigger);
+        if (!menu) return;
+        trigger.addEventListener("click", (e) => {
+            e.stopPropagation();
+            menu.classList.toggle("open");
+        });
     });
-  });
-  document.addEventListener("click", () => {
-    document.querySelectorAll(".dropdown-menu.open").forEach((m) => m.classList.remove("open"));
-  });
+    document.addEventListener("click", () => {
+        document.querySelectorAll(".dropdown-menu.open").forEach((m) => m.classList.remove("open"));
+    });
 }
 
 // ---- 히어로 배너 슬라이더 (점 인디케이터 전환) ----
 function initHeroSlider() {
-  const slider = document.querySelector(".hero-slider");
-  const slides = document.querySelectorAll(".hero-slide-content");
-  const dots = document.querySelectorAll(".hero-dots span");
-  if (!slider || !slides.length) return;
+    const slider = document.querySelector(".hero-slider");
+    const slides = document.querySelectorAll(".hero-slide-content");
+    const dots = document.querySelectorAll(".hero-dots span");
+    if (!slider || !slides.length) return;
 
-  const AUTO_PLAY_MS = 3000;
-  let index = 0;
-  let timerId = null;
+    const AUTO_PLAY_MS = 3000;
+    let index = 0;
+    let timerId = null;
 
-  function showSlide(i) {
-    index = (i + slides.length) % slides.length;
-    slides.forEach((s, n) => s.classList.toggle("active", n === index));
-    dots.forEach((d, n) => d.classList.toggle("active", n === index));
-  }
+    function showSlide(i) {
+        index = (i + slides.length) % slides.length;
+        slides.forEach((s, n) => s.classList.toggle("active", n === index));
+        dots.forEach((d, n) => d.classList.toggle("active", n === index));
+    }
 
-  function next() { showSlide(index + 1); }
-  function prev() { showSlide(index - 1); }
+    function next() { showSlide(index + 1); }
+    function prev() { showSlide(index - 1); }
 
-  function startAutoPlay() {
-    stopAutoPlay();
-    timerId = setInterval(next, AUTO_PLAY_MS);
-  }
-  function stopAutoPlay() {
-    if (timerId) clearInterval(timerId);
-    timerId = null;
-  }
+    function startAutoPlay() {
+        stopAutoPlay();
+        timerId = setInterval(next, AUTO_PLAY_MS);
+    }
+    function stopAutoPlay() {
+        if (timerId) clearInterval(timerId);
+        timerId = null;
+    }
 
-  dots.forEach((dot, i) => {
-    dot.addEventListener("click", () => { showSlide(i); startAutoPlay(); });
-  });
+    dots.forEach((dot, i) => {
+        dot.addEventListener("click", () => { showSlide(i); startAutoPlay(); });
+    });
 
-  const prevBtn = document.getElementById("heroPrev");
-  const nextBtn = document.getElementById("heroNext");
-  if (prevBtn) prevBtn.addEventListener("click", () => { prev(); startAutoPlay(); });
-  if (nextBtn) nextBtn.addEventListener("click", () => { next(); startAutoPlay(); });
+    const prevBtn = document.getElementById("heroPrev");
+    const nextBtn = document.getElementById("heroNext");
+    if (prevBtn) prevBtn.addEventListener("click", () => { prev(); startAutoPlay(); });
+    if (nextBtn) nextBtn.addEventListener("click", () => { next(); startAutoPlay(); });
 
-  slider.addEventListener("mouseenter", stopAutoPlay);
-  slider.addEventListener("mouseleave", startAutoPlay);
+    slider.addEventListener("mouseenter", stopAutoPlay);
+    slider.addEventListener("mouseleave", startAutoPlay);
 
-  showSlide(0);
-  startAutoPlay();
+    showSlide(0);
+    startAutoPlay();
 }
 
 // ---- 상단 카테고리 네비게이션: 현재 보고 있는 페이지/카테고리에 맞는 탭만 빨간색으로 강조 ----
 function initCategoryNav() {
-  const nav = document.querySelector(".category-nav");
-  if (!nav) return;
+    const nav = document.querySelector(".category-nav");
+    if (!nav) return;
 
-  const isListPage = location.pathname.split("/").pop() === "04_list.html";
-  const current = isListPage
-    ? new URLSearchParams(location.search).get("cat") || "all"
-    : document.body.dataset.navCurrent || "";
+    const isListPage = location.pathname.split("/").pop() === "04_list.html";
+    const current = isListPage
+        ? new URLSearchParams(location.search).get("cat") || "all"
+        : document.body.dataset.navCurrent || "";
 
-  nav.querySelectorAll("a[data-nav]").forEach((a) => {
-    a.classList.toggle("active", a.dataset.nav === current);
-  });
+    nav.querySelectorAll("a[data-nav]").forEach((a) => {
+        a.classList.toggle("active", a.dataset.nav === current);
+    });
 }
 
 // ---- DOM 로드 완료 후 실행 ----
 document.addEventListener("DOMContentLoaded", () => {
-  /*applyRoleVisibility();*/
-  initDropdowns();
-  initHeroSlider();
-  initCategoryNav();
+    /*applyRoleVisibility();*/
+    initDropdowns();
+    initHeroSlider();
+    initCategoryNav();
 
-  initOverlay("chatbotPanel", "chatbotBackdrop", ["chatbotFab"], ["chatbotClose"], null, true);
-  initOverlay("chatroomPanel", "chatroomBackdrop", ["chatroomTrigger"], ["chatroomClose"], "chatroom-open");
-  initOverlay("notificationPanel", "notificationBackdrop", ["notificationTrigger"], ["notificationClose"], "notification-open");
+    initOverlay("chatbotPanel", "chatbotBackdrop", ["chatbotFab"], ["chatbotClose"], null, true);
+    initOverlay("chatroomPanel", "chatroomBackdrop", ["chatroomTrigger"], ["chatroomClose"], "chatroom-open");
+    initOverlay("notificationPanel", "notificationBackdrop", ["notificationTrigger"], ["notificationClose"], "notification-open");
 
-  initTabs(".panel-tabs");
-  initTabs(".mypage-tabs");
-  initTabs(".admin-nav");
-  initTabs(".platform-tabs");
-  initTabs(".notice-tabs");
+    initTabs(".panel-tabs");
+    initTabs(".mypage-tabs");
+    initTabs(".admin-nav");
+    initTabs(".platform-tabs");
+    initTabs(".notice-tabs");
 
-  initQuiz();
-  initQuizStart();
-  initChatroomChat();
-  initGenreChips();
-  initQnaChatbotQuiz();
+    initQuiz();
+    initQuizStart();
+    initChatroomChat();
+    initGenreChips();
+    initQnaChatbotQuiz();
 
-  /*const roleSwitcher = document.getElementById("demoRoleSwitcher");
-  if (roleSwitcher) {
-    roleSwitcher.value = DEMO_ROLE;
-    roleSwitcher.addEventListener("change", (e) => setDemoRole(e.target.value));
-  }*/
+    /*const roleSwitcher = document.getElementById("demoRoleSwitcher");
+    if (roleSwitcher) {
+      roleSwitcher.value = DEMO_ROLE;
+      roleSwitcher.addEventListener("change", (e) => setDemoRole(e.target.value));
+    }*/
 });
 
 // 화면에 .section-heading이 보일 때마다 등장 애니메이션 재생
 const headings = document.querySelectorAll('.section-heading');
 const observer = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      void entry.target.offsetWidth; // 강제 리플로우
-      entry.target.style.animation = 'heading-shine 4s ease-in-out infinite, heading-fade-in 0.6s ease-out';
-    }
-  });
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            void entry.target.offsetWidth; // 강제 리플로우
+            entry.target.style.animation = 'heading-shine 4s ease-in-out infinite, heading-fade-in 0.6s ease-out';
+        }
+    });
 }, { threshold: 0.3 });
 
 headings.forEach(h => observer.observe(h));
 
 // 푸터 - 맨 위로 가기 버튼
-document.getElementById("footerTopBtn").addEventListener("click", function () {
-  window.scrollTo({ top: 0, behavior: "smooth" });
+document.getElementById("footerTopBtn").addEventListener("click", function() {
+    window.scrollTo({ top: 0, behavior: "smooth" });
 });
