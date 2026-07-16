@@ -37,4 +37,5 @@ public class ReviewDTO {
     private int commentCount;
     
     private List<GenreCategoryDTO> genreList;
+    
 }
