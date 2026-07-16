@@ -3,6 +3,7 @@ package com.youflex.service;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.youflex.dto.ReviewDTO;
 import com.youflex.mapper.CommentMapper;
@@ -24,8 +25,16 @@ public class ReviewService {
 	private final ReviewDraftMapper reviewDraftMapper;
 	
 //	1) 게시글 저장
-	public void write(ReviewDTO reviewDTO) {
+	@Transactional
+	public void write(ReviewDTO reviewDTO, List<Integer> genreCategoryIds) {
+		// 1. 게시글 데이터 저장
 		reviewMapper.write(reviewDTO);
+		
+		// 2. 장르를 선택했을 경우에만 매핑 테이블에 일괄 저장 진행
+		if(genreCategoryIds != null && !genreCategoryIds.isEmpty()) {
+			int generatedReviewId = reviewDTO.getReviewId();
+			reviewMapper.insertReviewGenres(generatedReviewId, genreCategoryIds);
+		}
 	}
 	
 //	2) 전체 게시글 목록 조회

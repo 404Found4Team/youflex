@@ -74,7 +74,7 @@ public class ReviewController {
 		}
 		
 //		게시글 저장
-		reviewService.write(reviewDTO);
+		reviewService.write(reviewDTO, genreCategoryIds);
 		
 		
 		
