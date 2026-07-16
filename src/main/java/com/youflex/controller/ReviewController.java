@@ -1,11 +1,11 @@
 package com.youflex.controller;
 
-import com.youflex.service.GenreCategoryService;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -13,10 +13,12 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.youflex.dto.MemberDTO;
 import com.youflex.dto.ReviewDTO;
+import com.youflex.service.GenreCategoryService;
 import com.youflex.service.ReviewService;
 
 import jakarta.servlet.http.HttpSession;
@@ -52,7 +54,8 @@ public class ReviewController {
 	
 //	2) 리뷰 글 작성
 	@PostMapping("/review/write")
-	public String write(ReviewDTO reviewDTO, HttpSession session) throws IOException{
+	public String write(ReviewDTO reviewDTO, HttpSession session,
+			@RequestParam(value="genreCategoryIds", required=false) List<Integer> genreCategoryIds, Model model) throws IOException{
 //		로그인 여부 확인
 		if(session.getAttribute("loginMember") == null) {
 			return "redirect:/login";
@@ -72,6 +75,8 @@ public class ReviewController {
 		
 //		게시글 저장
 		reviewService.write(reviewDTO);
+		
+		
 		
 //		저장 완료 후 메인 화면으로 이동
 		return "redirect:/";

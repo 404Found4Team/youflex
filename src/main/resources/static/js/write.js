@@ -13,7 +13,7 @@ function setDrafts(drafts) {
 
 // ===== 취향 선택(웅조)
 // 취향(관심 장르) 선택
-document.getElementById('tasteBtn').addEventListener('click', () => {
+/*document.getElementById('tasteBtn').addEventListener('click', () => {
   document.getElementById('genreModalBackdrop').classList.add('open');
 });
 document.getElementById('genreCancelBtn').addEventListener('click', () => {
@@ -49,8 +49,14 @@ document.getElementById('genreSaveBtn').addEventListener('click', () => {
   
   document.getElementById('genreModalBackdrop').classList.remove('open');
   alert(`선택된 취향: [${selectedGenres.join(', ')}]이 저장되었습니다.`);
+});*/
+const MAX_GENRE_SELECT = 3;
+const genreGrid = document.getElementById('genreGrid');
+genreGrid.querySelectorAll('.genre-chip').forEach((chip) => {
+	chip.addEventListener('click', ()=>{
+		
+	})
 });
-
 
 
 // ===== 별점 클릭 처리(웅조) ===============
