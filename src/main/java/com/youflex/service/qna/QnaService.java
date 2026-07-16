@@ -56,29 +56,34 @@ public class QnaService {
      * @param qnaDTO 등록할 질문 정보
      */
     public void createQna(QnaDTO qnaDTO) {
-        // 1. 'Y'이면 '비밀', 아니면 '공개'로 변환 (DB의 ENUM 값과 일치시키기 위함)
-        String inputSecret = qnaDTO.getQnaIsSecret();
-        String finalSecret = "Y".equals(inputSecret) ? "비밀" : "공개";
-
-        // 2. 변환된 값을 DTO에 다시 저장
-        qnaDTO.setQnaIsSecret(finalSecret);
-
-        // 3. 매퍼 호출
+        qnaDTO.setQnaIsSecret(normalizeSecret(qnaDTO.getQnaIsSecret()));
         qnaMapper.insertQna(qnaDTO);
     }
 
     /**
      * 질문 수정
-     * - 수정 전 대상 질문이 실제로 존재하는지 확인
+     * - 수정 전 대상 질문이 실제로 존재하는지, 요청자가 작성자 본인인지 확인
+     * - 비밀글 여부 값을 등록과 동일한 규칙으로 DB ENUM 값으로 변환 후 저장
      * @param qnaDTO 수정할 질문 정보 (qnaId 포함)
+     * @param requesterMemberId 수정을 요청한 회원 ID
      * @throws IllegalArgumentException 해당 ID의 질문이 존재하지 않을 경우
+     * @throws IllegalStateException 요청자가 작성자 본인이 아닐 경우
      */
-    public void updateQna(QnaDTO qnaDTO) {
+    public void updateQna(QnaDTO qnaDTO, int requesterMemberId) {
         QnaDTO existing = qnaMapper.selectQnaById(qnaDTO.getQnaId());
         if (existing == null) {
             throw new IllegalArgumentException("존재하지 않는 질문입니다. qnaId=" + qnaDTO.getQnaId());
         }
+        if (existing.getMemberId() != requesterMemberId) {
+            throw new IllegalStateException("수정 권한이 없습니다.");
+        }
+        qnaDTO.setQnaIsSecret(normalizeSecret(qnaDTO.getQnaIsSecret()));
         qnaMapper.updateQna(qnaDTO);
+    }
+
+    // 'Y'이면 '비밀', 그 외(N 포함)는 '공개'로 변환 (프론트 라디오 값 -> DB ENUM 값)
+    private String normalizeSecret(String inputSecret) {
+        return "Y".equals(inputSecret) ? "비밀" : "공개";
     }
 
     /**
