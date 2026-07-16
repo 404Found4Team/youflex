@@ -1,10 +1,10 @@
-package com.youflex.service;
+package com.youflex.service.notice;
 
 import java.util.List;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
-import com.youflex.dto.NoticeDTO;
-import com.youflex.mapper.NoticeMapper;
+import com.youflex.dto.notice.NoticeDTO;
+import com.youflex.mapper.notice.NoticeMapper;
 import com.youflex.exception.NoticeNotFoundException;
 
 /**

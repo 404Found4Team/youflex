@@ -1,4 +1,4 @@
-package com.youflex.dto;
+package com.youflex.dto.admin;
 
 import java.time.LocalDateTime;
 

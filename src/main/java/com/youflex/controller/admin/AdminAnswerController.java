@@ -1,11 +1,11 @@
-package com.youflex.controller;
+package com.youflex.controller.admin;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import com.youflex.dto.AdminAnswerDTO;
-import com.youflex.service.AdminAnswerService;
+import com.youflex.dto.admin.AdminAnswerDTO;
+import com.youflex.service.admin.AdminAnswerService;
 
 /**
  * 관리자 답변(Q&A 답변) 관련 API 컨트롤러

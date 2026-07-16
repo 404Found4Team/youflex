@@ -1,4 +1,4 @@
-package com.youflex.controller;
+package com.youflex.controller.admin;
 
 import java.util.Map;
 
@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.youflex.dto.MemberDTO;
-import com.youflex.service.AdminReportService;
+import com.youflex.service.admin.AdminReportService;
 
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;

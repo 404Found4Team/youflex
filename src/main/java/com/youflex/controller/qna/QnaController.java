@@ -1,17 +1,18 @@
-package com.youflex.controller;
+package com.youflex.controller.qna;
 
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
-import com.youflex.dto.QnaDTO;
-import com.youflex.dto.QnaCommentDTO;
+import com.youflex.dto.qna.QnaDTO;
+import com.youflex.dto.qna.QnaCommentDTO;
 import com.youflex.dto.QnaReportDTO;
 import com.youflex.dto.MemberDTO;
-import com.youflex.service.QnaService;
-import com.youflex.service.QnaCommentService;
+import com.youflex.service.qna.QnaService;
+import com.youflex.service.qna.QnaCommentService;
 import com.youflex.service.QnaReportService;
+import com.youflex.exception.QnaAccessDeniedException;
 import jakarta.servlet.http.HttpSession;
 
 /**
@@ -40,12 +41,21 @@ public class QnaController {
 
     /**
      * 특정 질문 상세 조회
+     * - 비밀글이면 작성자 본인 또는 관리자만 조회 가능 (그 외에는 403 Forbidden)
      * @param qnaId 조회할 질문 ID
-     * @return 질문 상세 정보 (200 OK)
+     * @param session 로그인 세션 (작성자/관리자 여부 확인용, 비로그인이어도 공개글은 조회 가능)
+     * @return 질문 상세 정보 (200 OK), 비밀글이고 권한 없으면 403 Forbidden
      */
     @GetMapping("/{qnaId}")
-    public ResponseEntity<QnaDTO> getQnaDetail(@PathVariable("qnaId") int qnaId) {
-        return ResponseEntity.ok(qnaService.getQnaDetail(qnaId));
+    public ResponseEntity<QnaDTO> getQnaDetail(@PathVariable("qnaId") int qnaId, HttpSession session) {
+        MemberDTO loginMember = (MemberDTO) session.getAttribute("loginMember");
+        Integer requesterMemberId = loginMember != null ? loginMember.getMemberId() : null;
+        boolean isAdmin = loginMember != null && "관리자".equals(loginMember.getMemberGrade());
+        try {
+            return ResponseEntity.ok(qnaService.getQnaDetail(qnaId, requesterMemberId, isAdmin));
+        } catch (QnaAccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
     }
 
     /**

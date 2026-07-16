@@ -1,4 +1,4 @@
-package com.youflex.dto;
+package com.youflex.dto.notice;
 
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;

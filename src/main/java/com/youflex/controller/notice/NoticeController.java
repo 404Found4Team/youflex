@@ -1,12 +1,12 @@
-package com.youflex.controller;
+package com.youflex.controller.notice;
 
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
-import com.youflex.dto.NoticeDTO;
-import com.youflex.service.NoticeService;
+import com.youflex.dto.notice.NoticeDTO;
+import com.youflex.service.notice.NoticeService;
 
 /**
  * 공지사항 관련 API 컨트롤러

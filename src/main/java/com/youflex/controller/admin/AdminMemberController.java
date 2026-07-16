@@ -1,4 +1,4 @@
-package com.youflex.controller;
+package com.youflex.controller.admin;
 
 import java.util.List;
 import java.util.Map;
@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.youflex.dto.MemberDTO;
 import com.youflex.service.MemberService;
-import com.youflex.service.WarningService;
+import com.youflex.service.admin.WarningService;
 
 import jakarta.servlet.http.HttpSession;
 import lombok.Data;

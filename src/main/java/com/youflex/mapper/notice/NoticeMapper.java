@@ -1,8 +1,8 @@
-package com.youflex.mapper;
+package com.youflex.mapper.notice;
 
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
-import com.youflex.dto.NoticeDTO;
+import com.youflex.dto.notice.NoticeDTO;
 
 @Mapper
 public interface NoticeMapper {

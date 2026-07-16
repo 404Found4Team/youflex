@@ -1,4 +1,4 @@
-package com.youflex.controller;
+package com.youflex.controller.notice;
 
 import java.util.List;
 
@@ -8,9 +8,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import com.youflex.dto.NoticeDTO;
-import com.youflex.service.NoticeService;
-import com.youflex.service.QnaService;
+import com.youflex.dto.notice.NoticeDTO;
+import com.youflex.service.notice.NoticeService;
+import com.youflex.service.qna.QnaService;
 
 import lombok.RequiredArgsConstructor;
 

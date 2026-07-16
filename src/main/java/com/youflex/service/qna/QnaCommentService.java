@@ -1,10 +1,10 @@
-package com.youflex.service;
+package com.youflex.service.qna;
 
 import java.util.List;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
-import com.youflex.dto.QnaCommentDTO;
-import com.youflex.mapper.QnaCommentMapper;
+import com.youflex.dto.qna.QnaCommentDTO;
+import com.youflex.mapper.qna.QnaCommentMapper;
 
 /**
  * Q&A 댓글(QnaComment) 관련 비즈니스 로직

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.youflex.mapper.NoticeMapper">
+<mapper namespace="com.youflex.mapper.notice.NoticeMapper">
 
-    <resultMap id="noticeResultMap" type="com.youflex.dto.NoticeDTO">
+    <resultMap id="noticeResultMap" type="com.youflex.dto.notice.NoticeDTO">
         <id property="noticeId" column="notice_id" />
         <result property="noticeTitle" column="notice_title" />
         <result property="noticeContent" column="notice_content" />
@@ -32,12 +32,12 @@
         WHERE notice_id = #{noticeId}
     </update>
 
-    <insert id="insertNotice" parameterType="com.youflex.dto.NoticeDTO" useGeneratedKeys="true" keyProperty="noticeId">
+    <insert id="insertNotice" parameterType="com.youflex.dto.notice.NoticeDTO" useGeneratedKeys="true" keyProperty="noticeId">
         INSERT INTO notice (notice_title, notice_content, notice_hit, notice_created_at, notice_updated_at)
         VALUES (#{noticeTitle}, #{noticeContent}, 0, NOW(), NOW())
     </insert>
 
-    <update id="updateNotice" parameterType="com.youflex.dto.NoticeDTO">
+    <update id="updateNotice" parameterType="com.youflex.dto.notice.NoticeDTO">
         UPDATE notice
         SET notice_title = #{noticeTitle},
             notice_content = #{noticeContent},

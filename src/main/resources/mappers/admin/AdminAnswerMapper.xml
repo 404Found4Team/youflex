@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.youflex.mapper.AdminAnswerMapper">
+<mapper namespace="com.youflex.mapper.admin.AdminAnswerMapper">
 
-    <resultMap id="adminAnswerResultMap" type="com.youflex.dto.AdminAnswerDTO">
+    <resultMap id="adminAnswerResultMap" type="com.youflex.dto.admin.AdminAnswerDTO">
         <id property="adminAnswerId" column="admin_answer_id" />
         <result property="qnaId" column="qna_id" />
         <result property="adminAnswerContent" column="admin_answer_content" />
@@ -23,12 +23,12 @@
         LIMIT 1
     </select>
 
-    <insert id="insertAnswer" parameterType="com.youflex.dto.AdminAnswerDTO" useGeneratedKeys="true" keyProperty="adminAnswerId">
+    <insert id="insertAnswer" parameterType="com.youflex.dto.admin.AdminAnswerDTO" useGeneratedKeys="true" keyProperty="adminAnswerId">
         INSERT INTO admin_answer (qna_id, admin_answer_content, admin_answer_created_at, admin_answer_updated_at)
         VALUES (#{qnaId}, #{adminAnswerContent}, NOW(), NOW())
     </insert>
 
-    <update id="updateAnswer" parameterType="com.youflex.dto.AdminAnswerDTO">
+    <update id="updateAnswer" parameterType="com.youflex.dto.admin.AdminAnswerDTO">
         UPDATE admin_answer
         SET admin_answer_content = #{adminAnswerContent},
             admin_answer_updated_at = NOW()

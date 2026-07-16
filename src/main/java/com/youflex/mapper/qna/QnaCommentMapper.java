@@ -1,8 +1,8 @@
-package com.youflex.mapper;
+package com.youflex.mapper.qna;
 
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
-import com.youflex.dto.QnaCommentDTO;
+import com.youflex.dto.qna.QnaCommentDTO;
 
 @Mapper
 public interface QnaCommentMapper {

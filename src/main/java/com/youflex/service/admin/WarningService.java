@@ -1,10 +1,10 @@
-package com.youflex.service;
+package com.youflex.service.admin;
 
 import org.springframework.stereotype.Service;
 
-import com.youflex.dto.WarningDTO;
+import com.youflex.dto.admin.WarningDTO;
 import com.youflex.mapper.MemberMapper;
-import com.youflex.mapper.WarningMapper;
+import com.youflex.mapper.admin.WarningMapper;
 
 import lombok.RequiredArgsConstructor;
 

@@ -1,8 +1,8 @@
-package com.youflex.mapper;
+package com.youflex.mapper.admin;
 
 import org.apache.ibatis.annotations.Mapper;
 
-import com.youflex.dto.WarningDTO;
+import com.youflex.dto.admin.WarningDTO;
 
 @Mapper
 public interface WarningMapper {

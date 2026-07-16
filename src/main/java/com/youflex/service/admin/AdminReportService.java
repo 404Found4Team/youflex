@@ -1,4 +1,4 @@
-package com.youflex.service;
+package com.youflex.service.admin;
 
 import java.util.ArrayList;
 import java.util.Comparator;

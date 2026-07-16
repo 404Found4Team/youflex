@@ -1,7 +1,7 @@
-package com.youflex.mapper;
+package com.youflex.mapper.admin;
 
 import org.apache.ibatis.annotations.Mapper;
-import com.youflex.dto.AdminAnswerDTO;
+import com.youflex.dto.admin.AdminAnswerDTO;
 
 @Mapper
 public interface AdminAnswerMapper {

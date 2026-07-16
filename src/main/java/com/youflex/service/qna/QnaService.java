@@ -1,10 +1,11 @@
-package com.youflex.service;
+package com.youflex.service.qna;
 
 import java.util.List;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
-import com.youflex.dto.QnaDTO;
-import com.youflex.mapper.QnaMapper;
+import com.youflex.dto.qna.QnaDTO;
+import com.youflex.mapper.qna.QnaMapper;
+import com.youflex.exception.QnaAccessDeniedException;
 
 /**
  * Q&A(질문) 관련 비즈니스 로직
@@ -26,15 +27,23 @@ public class QnaService {
 
     /**
      * 질문 상세 조회
-     * - 조회 시 조회수를 1 증가시킴 (DB 반영 + 반환 객체에도 반영)
+     * - 비밀글(qnaIsSecret == "비밀")인 경우 작성자 본인 또는 관리자만 조회 가능
+     * - 조회 시 조회수를 1 증가시킴 (DB 반영 + 반환 객체에도 반영). 접근 거부 시에는 증가시키지 않음
      * @param qnaId 조회할 질문 ID
+     * @param requesterMemberId 조회를 요청한 회원 ID (비로그인이면 null)
+     * @param isAdmin 요청자가 관리자 등급인지 여부
      * @return 질문 상세 정보
      * @throws IllegalArgumentException 해당 ID의 질문이 존재하지 않을 경우
+     * @throws QnaAccessDeniedException 비밀글인데 작성자 본인도 관리자도 아닐 경우
      */
-    public QnaDTO getQnaDetail(int qnaId) {
+    public QnaDTO getQnaDetail(int qnaId, Integer requesterMemberId, boolean isAdmin) {
         QnaDTO qna = qnaMapper.selectQnaById(qnaId);
         if (qna == null) {
             throw new IllegalArgumentException("존재하지 않는 질문입니다. qnaId=" + qnaId);
+        }
+        boolean isOwner = requesterMemberId != null && requesterMemberId == qna.getMemberId();
+        if ("비밀".equals(qna.getQnaIsSecret()) && !isOwner && !isAdmin) {
+            throw new QnaAccessDeniedException("비공개 질문입니다. qnaId=" + qnaId);
         }
         qnaMapper.increaseQnaHit(qnaId); // DB 상의 조회수 증가
         qna.setQnaHit(qna.getQnaHit() + 1); // 반환할 객체에도 증가된 조회수 반영

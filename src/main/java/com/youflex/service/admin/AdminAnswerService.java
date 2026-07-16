@@ -1,11 +1,11 @@
-package com.youflex.service;
+package com.youflex.service.admin;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
-import com.youflex.dto.AdminAnswerDTO;
-import com.youflex.mapper.AdminAnswerMapper;
-import com.youflex.mapper.QnaMapper;
+import com.youflex.dto.admin.AdminAnswerDTO;
+import com.youflex.mapper.admin.AdminAnswerMapper;
+import com.youflex.mapper.qna.QnaMapper;
 
 /**
  * 관리자 답변(AdminAnswer) 관련 비즈니스 로직
