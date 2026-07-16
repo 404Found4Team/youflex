@@ -3,7 +3,7 @@
 // ==========================================================================
 
 // ---- 로그인/권한 상태 시뮬레이션 (실제 구현 시 인증 상태로 대체) ----
-const DEMO_ROLE = localStorage.getItem("demoRole") || "guest"; // guest | user | critic | admin
+/*const DEMO_ROLE = localStorage.getItem("demoRole") || "guest"; // guest | user | critic | admin
 
 function applyRoleVisibility() {
   document.querySelectorAll("[data-role-visible]").forEach((el) => {
@@ -11,11 +11,11 @@ function applyRoleVisibility() {
     el.style.display = allowed.includes(DEMO_ROLE) ? "" : "none";
   });
 }
-
-function setDemoRole(role) {
+*/
+/*function setDemoRole(role) {
   localStorage.setItem("demoRole", role);
   location.reload();
-}
+}*/
 
 // ---- 오버레이 패널 (챗봇 / 채팅방) ----
 function initOverlay(panelId, backdropId, openTriggerIds, closeTriggerIds, bodyClass, toggleOnTrigger) {
@@ -462,11 +462,11 @@ document.addEventListener("DOMContentLoaded", () => {
   initGenreChips();
   initQnaChatbotQuiz();
 
-  const roleSwitcher = document.getElementById("demoRoleSwitcher");
+  /*const roleSwitcher = document.getElementById("demoRoleSwitcher");
   if (roleSwitcher) {
     roleSwitcher.value = DEMO_ROLE;
     roleSwitcher.addEventListener("change", (e) => setDemoRole(e.target.value));
-  }
+  }*/
 });
 
 // 화면에 .section-heading이 보일 때마다 등장 애니메이션 재생

@@ -209,7 +209,6 @@
       <button class="btn btn-primary" id="chatroomSendBtn">전송</button>
     </div>
   </div>
-  
   <!-- 3. 개설 패널: '우수' 또는 '관리자' 등급만 렌더링 -->
   <div class="panel-body" data-tab-panel="create"
        th:if="${session.loginMember != null and (session.loginMember.memberGrade == '우수' or session.loginMember.memberGrade == '관리자')}">
