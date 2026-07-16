@@ -526,7 +526,7 @@ body.notification-open #chatbotPanel.slide-panel { right: 408px; }
   background: var(--bg-1); border: 1px solid var(--border); border-radius: var(--radius);
   padding: 32px;
 }
-.notice-detail-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; } /* 제목 + 수정/삭제 버튼을 한 줄에 배치 */
+.notice-detail-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 6px; } /* 제목 + 수정/삭제 버튼을 한 줄에 배치 */
 .notice-detail-title { font-size: 20px; font-weight: 800; margin: 0 0 16px; }
 .notice-detail-meta { font-size: 13px; color: var(--text-2); line-height: 1.9; padding-bottom: 20px; border-bottom: 1px solid var(--border); margin-bottom: 24px; } /* 작성자/등록일/조회수 안내 영역 */
 .notice-detail-body { line-height: 1.8; color: var(--text-1); font-size: 14px; white-space: pre-line; margin-bottom: 28px; } /* white-space: pre-line -> 줄바꿈 문자를 그대로 살려서 보여줌 */

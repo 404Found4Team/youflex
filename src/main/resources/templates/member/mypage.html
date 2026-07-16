@@ -49,10 +49,7 @@
   <div data-tab-panel="profile" class="mt-24">
     <form id="profileForm" th:action="@{/mypage}" method="post">
     <div th:if="${profileError}" th:text="${profileError}" style="color:var(--danger);font-size:13px;margin-bottom:12px">현재 비밀번호가 일치하지 않습니다.</div>
-<<<<<<< HEAD
     <div th:if="${profileSuccess}" th:text="${profileSuccess}" style="color:var(--success);font-size:13px;margin-bottom:12px">회원정보가 저장되었습니다.</div>
-=======
->>>>>>> main
     <div class="form-row">
       <label>이름</label>
       <input type="text" id="member_name" name="memberName" th:value="${myInfo.memberName}" />
