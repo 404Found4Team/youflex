@@ -11,102 +11,104 @@ function setDrafts(drafts) {
   localStorage.setItem(DRAFT_KEY, JSON.stringify(drafts));
 }
 
-// ===== 취향 선택(웅조)
-// 취향(관심 장르) 선택
-/*document.getElementById('tasteBtn').addEventListener('click', () => {
-  document.getElementById('genreModalBackdrop').classList.add('open');
-});
-document.getElementById('genreCancelBtn').addEventListener('click', () => {
-  document.getElementById('genreModalBackdrop').classList.remove('open');
-});
-// 칩 하나하나를 클릭했을 때 활성화/비활성화 상태를 토글하는 코드 추가 ⭕
-const genreChips = document.querySelectorAll('.genre-chip');
-genreChips.forEach(chip => {
-  chip.addEventListener('click', () => {
-    chip.classList.toggle('selected'); // 클릭 시 selected 클래스를 넣었다 뺐다 함
-  });
-});
-document.getElementById('genreSaveBtn').addEventListener('click', () => {
-  document.getElementById('genreModalBackdrop').classList.remove('open');
-  alert('취향이 저장되었습니다. (데모)');
-});
-document.getElementById('genreSaveBtn').addEventListener('click', () => {
-  // 현재 선택된 장르 수집 (데모 혹은 실제 데이터 반영용)
-  const selectedGenres = [];
-  document.querySelectorAll('.genre-chip.selected').forEach(chip => {
-    selectedGenres.push(chip.getAttribute('data-genre'));
-  });
-  
-  document.getElementById('genreModalBackdrop').classList.remove('open');
-  alert(`선택된 취향: [${selectedGenres.join(', ')}]이 저장되었습니다.`);
-});
-document.getElementById('genreSaveBtn').addEventListener('click', () => {
-  // 현재 선택된 장르 수집 (데모 혹은 실제 데이터 반영용)
-  const selectedGenres = [];
-  document.querySelectorAll('.genre-chip.selected').forEach(chip => {
-    selectedGenres.push(chip.getAttribute('data-genre'));
-  });
-  
-  document.getElementById('genreModalBackdrop').classList.remove('open');
-  alert(`선택된 취향: [${selectedGenres.join(', ')}]이 저장되었습니다.`);
-});*/
+// ===== [1] 장르 선택 모달 및 최대 3개 제한 로직 =====
 const MAX_GENRE_SELECT = 3;
-const genreGrid = document.getElementById('genreGrid');
-genreGrid.querySelectorAll('.genre-chip').forEach((chip) => {
-	chip.addEventListener('click', ()=>{
-		
-	})
-});
+const tasteBtn = document.getElementById('tasteBtn');               // ❤️ 관련 장르 버튼
+const genreModal = document.getElementById('genreModalBackdrop');   // 모달창 배경
+const genreGrid = document.getElementById('genreGrid');             // 장르 칩 그리드
+const genreSkipBtn = document.getElementById('genreSkipBtn');       // 취소 버튼
+const genreDoneBtn = document.getElementById('genreDoneBtn');       // 저장 버튼
+
+// 1. 장르 선택 모달 열기
+if (tasteBtn && genreModal) {
+  tasteBtn.addEventListener('click', () => {
+    genreModal.classList.add('open');
+  });
+}
+
+// 2. 장르 선택 모달 닫기 (취소 클릭 시)
+if (genreSkipBtn && genreModal) {
+  genreSkipBtn.addEventListener('click', () => {
+    genreModal.classList.remove('open');
+  });
+}
+
+// 3. 장르 칩 클릭 이벤트 핸들러 (최대 3개 제한 핵심 로직)
+if (genreGrid) {
+  // Thymeleaf로 렌더링된 button.genre-chip 요소들 타겟팅
+  const genreChips = genreGrid.querySelectorAll('.genre-chip');
+  
+  genreChips.forEach((chip) => {
+    chip.addEventListener('click', () => {
+      // 현재 선택된 장르 개수 파악
+      const selectedCount = genreGrid.querySelectorAll('.genre-chip.selected').length;
+      
+      // 이미 3개 선택했는데 추가로 더 누르려 하면 경고 후 이벤트 블로킹
+      if (!chip.classList.contains('selected') && selectedCount >= MAX_GENRE_SELECT) {
+        alert(`관심 장르는 최대 ${MAX_GENRE_SELECT}개까지만 선택할 수 있어요.`);
+        return;
+      }
+      
+      // 3개 미만이거나 기존에 선택된 것을 취소할 때는 토글 정상 작동
+      chip.classList.toggle('selected');
+    });
+  });
+}
+
+// 4. 저장 완료 버튼 클릭 시 처리 (버튼 텍스트 변경 로직 제외)
+if (genreDoneBtn && genreModal) {
+  genreDoneBtn.addEventListener('click', () => {
+    const selectedChips = genreGrid.querySelectorAll('.genre-chip.selected');
+    const selectedGenres = [];
+    
+    selectedChips.forEach(chip => {
+      // th:attr="data-genre-id=${genre.genreCategoryId}" 로 입력된 id 추출
+      selectedGenres.push({
+        id: chip.getAttribute('data-genre-id'),
+        name: chip.querySelector('span').textContent.trim()
+      });
+    });
+
+    // ----------------------------------------------------
+    // [수정 💥] '❤️ 관련 장르' 버튼의 텍스트를 바꾸는 코드를 삭제했습니다.
+    // 이제 장르를 선택하고 저장해도 화면의 버튼명은 변함없이 "❤️ 관련 장르"로 고정됩니다.
+    // ----------------------------------------------------
+
+    // [중요 🌟] 스프링 부트로 선택 장르 ID들을 안전하게 넘겨주기 위한 hidden input 세팅
+    const form = document.getElementById('reviewForm');
+    if (form) {
+      // 매번 새로 저장할 때 기존에 삽입되었던 장르 hidden tags 삭제하여 중복 방지
+      form.querySelectorAll('input[name="genreCategoryIds"]').forEach(el => el.remove());
+
+      // 선택한 장르 개수(최대 3개)만큼 hidden input을 생성하여 전송 폼에 주입
+      selectedGenres.forEach(genre => {
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'genreCategoryIds'; // Controller에서 받을 List<Integer> 필드명
+        hiddenInput.value = genre.id;
+        form.appendChild(hiddenInput);
+      });
+    }
+
+    // 모달창 닫기
+    genreModal.classList.remove('open');
+    
+    // 사용자에게 직관적으로 저장되었음을 알리는 가벼운 피드백 (선택사항)
+    alert(`선택하신 ${selectedGenres.length}개의 장르가 임시 매핑되었습니다.`);
+  });
+}
 
 
-// ===== 별점 클릭 처리(웅조) ===============
-		// let stars  = document.querySelectorAll(".rating-input span");
-		// let ratingInput = document.querySelector("input[name='reviewRating']");
-		
-		// console.log(stars);
-		// console.log(ratingInput);
-		
-		// // 별 표시 업데이트 - rating 개수만큼 active(노란색), 나머지는 비활성화
-		// function updateStars(rating){
-		// 	stars.forEach(function(s, i){
-		// 		if(i < rating){
-		// 			s.classList.add("active");
-		// 		} else{
-		// 			s.classList.remove("active");
-		// 		}
-		// 	});
-		// }
-		
-		// stars.forEach(function(star, index){
-		// 	// 클릭 이벤트 - 별점 확정 + hidden필드 값 변경
-		// 	star.addEventListener("click", function(){
-		// 		ratingInput.value = index + 1;
-		// 		updateStars(index + 1);
-		// 		console.log(ratingInput);
-		// 	});
-			
-		// 	// 마우스 올릴때 - 미리보기(해당 별까지 노란색으로 표시)
-		// 	star.addEventListener("mouseover", function(){
-		// 		updateStars(index + 1);
-		// 	});
-			
-		// 	// 마우스 나갈때 - 현재 확정된 별점으로 유지
-		//  	star.addEventListener("mouseout", function(){
-		// 		updateStars(parseInt(ratingInput.value));
-		// 	});
-		// });
-    // ===== 별점 클릭 처리 (0.5점 단위 수정) ===============
+// ===== [2] 별점 클릭 처리 (0.5점 단위 + 폭죽 이펙트) ===============
 const starBoxes = document.querySelectorAll(".star-box");
 const ratingInput = document.querySelector("input[name='reviewRating']");
 const allHalves = document.querySelectorAll(".star-box .half");
 
-// 현재 평점(score)에 맞춰서 모든 반 칸 별의 색상을 업데이트하는 함수
 function updateStars(score) {
   allHalves.forEach((half) => {
     const parentBox = half.closest(".star-box");
     const boxValue = parseFloat(parentBox.getAttribute("data-value"));
     
-    // 왼쪽 반 칸은 (부모값 - 0.5) 점수를 의미함
     if (half.classList.contains("left")) {
       if (boxValue - 0.5 <= score) {
         half.classList.add("active");
@@ -114,7 +116,6 @@ function updateStars(score) {
         half.classList.remove("active");
       }
     } 
-    // 오른쪽 반 칸은 부모값 전체 점수를 의미함
     else if (half.classList.contains("right")) {
       if (boxValue <= score) {
         half.classList.add("active");
@@ -125,129 +126,109 @@ function updateStars(score) {
   });
 }
 
-// 초기 화면 로드 시 hidden input에 적힌 점수대로 별 표시
-updateStars(parseFloat(ratingInput.value || 0));
+// 초기 로딩 시 기본 설정값으로 업데이트
+if (ratingInput) {
+  updateStars(parseFloat(ratingInput.value || 0));
+}
 
-// [이벤트 바인딩 부분 수정]
 allHalves.forEach((half) => {
   const parentBox = half.closest(".star-box");
   const boxValue = parseFloat(parentBox.getAttribute("data-value"));
   const currentHalfScore = half.classList.contains("left") ? boxValue - 0.5 : boxValue;
 
-  // 1. 클릭 시 점수 확정
   half.addEventListener("click", () => {
     ratingInput.value = currentHalfScore;
     updateStars(currentHalfScore);
-    console.log("확정된 별점:", ratingInput.value);
+	console.log("확정된 별점 : ", ratingInput.value);
   });
 
-  // 2. 마우스 올리면 해당 점수까지 미리보기 + 폭죽 효과 발생!
   half.addEventListener("mouseover", () => {
     updateStars(currentHalfScore);
-    // 마우스가 닿은 대상(half)을 매개변수로 넘겨 폭죽 가동
     createStarFireworks(half); 
   });
 
-  // 3. 마우스가 벗어나면 기존에 확정됐던 점수로 복구
   half.addEventListener("mouseout", () => {
     const confirmedScore = parseFloat(ratingInput.value || 0);
     updateStars(confirmedScore);
   });
 });
 
-// ★ 폭죽 이펙트를 생성하는 새로운 핵심 함수 ★
+// 호버링 폭죽 이펙트
 function createStarFireworks(element) {
-  // 마우스가 올라간 별 요소를 기준으로 화면 절대 좌표(기하 구조) 계산
   const rect = element.getBoundingClientRect();
   const centerX = rect.left + rect.width / 2;
   const centerY = rect.top + rect.height / 2;
 
-  // 폭죽 조각 개수 설정 (8개~10개 정도가 가장 깔끔합니다)
   const particleCount = 8;
-  // 화려함을 더해줄 네온 컬러풀 색상 리스트
   const colors = ['#f39c12', '#ffe066', '#ff6b6b', '#BAE6FD', '#4ade80'];
 
   for (let i = 0; i < particleCount; i++) {
     const particle = document.createElement('div');
     particle.className = 'star-particle';
 
-    // 무작위 색상 및 크기 지정
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
-    const randomSize = Math.random() * 4 + 4; // 4px ~ 8px
+    const randomSize = Math.random() * 4 + 4; 
     particle.style.backgroundColor = randomColor;
     particle.style.width = `${randomSize}px`;
     particle.style.height = `${randomSize}px`;
 
-    // 폭죽이 터지기 시작할 중심부 시작 위치 지정
     particle.style.left = `${centerX - randomSize / 2}px`;
     particle.style.top = `${centerY - randomSize / 2}px`;
 
-    // 각 조각이 사방으로 퍼져나갈 랜덤 각도와 거리 계산
     const angle = (i * (360 / particleCount) + Math.random() * 20) * (Math.PI / 180);
-    const distance = Math.random() * 35 + 25; // 퍼지는 반경 (25px ~ 60px)
+    const distance = Math.random() * 35 + 25; 
     const tx = Math.cos(angle) * distance;
     const ty = Math.sin(angle) * distance;
 
-    // CSS 애니메이션 변수로 전달
     particle.style.setProperty('--tx', `${tx}px`);
     particle.style.setProperty('--ty', `${ty}px`);
 
     document.body.appendChild(particle);
 
-    // 애니메이션이 끝나면 DOM에서 깔끔하게 삭제 (메모리 관리)
     particle.addEventListener('animationend', () => {
       particle.remove();
     });
   }
 }
 
-// ===== 사진 업로드 미리보기 수정(웅조)===== 
-		// [1] 파일 선택칸과 미리보기 이미지를 가져온다
-/*		const imgInput = document.getElementById('imgInput');    // <input type="file">
-		const imgPreview = document.getElementById('imgPreview');  // 미리보기 <img>
 
-		// [2] 파일을 선택하면(change) 그 사진을 화면에 미리 보여준다
-		imgInput.addEventListener('change', function () {
-			const file = imgInput.files[0];               // 선택한 파일 (없으면 undefined)
-			if (!file) return;
+// ===== [3] 사진 업로드 미리보기 ===== 
+const imgInput = document.getElementById('imgInput');    
+const imgPreview = document.getElementById('imgPreview');  
 
-			const reader = new FileReader();              // 파일을 화면에 쓸 수 있는 형태로 읽는 도구
-			reader.onload = function (e) {
-				imgPreview.src = e.target.result;         // 읽어들인 이미지를 미리보기에 넣음
-				imgPreview.style.display = 'block';       // 숨겨둔 미리보기를 보이게 함
-			};
-			reader.readAsDataURL(file);                   // 파일 읽기 시작
-		});*/
-		
-		// ===== 사진 업로드 미리보기 수정 ===== 
-		const imgInput = document.getElementById('imgInput');    
-		const imgPreview = document.getElementById('imgPreview');  
+if (imgInput && imgPreview) {
+  imgInput.addEventListener('change', function () {
+    const file = imgInput.files[0];               
+    if (!file) {
+      imgPreview.style.display = 'none';
+      return;
+    }
 
-		// 요소가 존재하는지 안전하게 체크한 뒤 이벤트를 연결합니다.
-		if (imgInput && imgPreview) {
-		  imgInput.addEventListener('change', function () {
-		    const file = imgInput.files[0];               
-		    if (!file) return;
+    const reader = new FileReader();              
+    reader.onload = function (e) {
+      imgPreview.src = e.target.result;         
+      imgPreview.style.display = 'block'; 
+    };
+    reader.readAsDataURL(file);                   
+  });
+}
 
-		    const reader = new FileReader();              
-		    reader.onload = function (e) {
-		      imgPreview.src = e.target.result;         
-		      imgPreview.style.display = 'block'; // 숨겨져 있던 이미지를 표시
-		    };
-		    reader.readAsDataURL(file);                   
-		  });
-		}
 
+// ===== [4] 로컬 스토리지 기반 임시저장 기능 =====
 function renderDraftList() {
   const drafts = getDrafts();
   const listEl = document.getElementById('draftList');
   const emptyMsg = document.getElementById('draftEmptyMsg');
+  
+  if (!listEl) return;
+  
   listEl.innerHTML = '';
   if (drafts.length === 0) {
-    emptyMsg.style.display = '';
+    if (emptyMsg) emptyMsg.style.display = '';
     return;
   }
-  emptyMsg.style.display = 'none';
+  if (emptyMsg) emptyMsg.style.display = 'none';
+  
   drafts.slice().reverse().forEach((draft) => {
     const item = document.createElement('div');
     item.className = 'draft-item';
@@ -270,11 +251,13 @@ function renderDraftList() {
     loadBtn.className = 'btn btn-sm';
     loadBtn.textContent = '불러오기';
     loadBtn.addEventListener('click', () => loadDraft(draft.id));
+    
     const deleteBtn = document.createElement('button');
     deleteBtn.type = 'button';
     deleteBtn.className = 'btn btn-sm btn-danger';
     deleteBtn.textContent = '삭제';
     deleteBtn.addEventListener('click', () => deleteDraft(draft.id));
+    
     actionsEl.appendChild(loadBtn);
     actionsEl.appendChild(deleteBtn);
 
@@ -287,11 +270,37 @@ function renderDraftList() {
 function loadDraft(id) {
   const draft = getDrafts().find((d) => d.id === id);
   if (!draft) return;
-  document.getElementById('genre_category_id').value = draft.category;
-  document.getElementById('review_platform').value = draft.platform;
-  document.getElementById('review_title').value = draft.title;
-  document.getElementById('review_content').value = draft.body;
-  document.getElementById('review_related').value = draft.related;
+  
+  if (document.getElementById('review_platform')) {
+    document.getElementById('review_platform').value = draft.platform;
+  }
+  if (document.getElementById('review_title')) {
+    document.getElementById('review_title').value = draft.title;
+  }
+  if (document.getElementById('review_content')) {
+    document.getElementById('review_content').value = draft.body;
+  }
+  if (document.getElementById('review_related')) {
+    document.getElementById('review_related').value = draft.related;
+  }
+
+  // 장르 복구 (다대다 데이터 복구 처리)
+  if (draft.categories && genreGrid) {
+    genreGrid.querySelectorAll('.genre-chip').forEach(chip => {
+      const gId = chip.getAttribute('data-genre-id');
+      if (draft.categories.includes(gId)) {
+        chip.classList.add('selected');
+      } else {
+        chip.classList.remove('selected');
+      }
+    });
+    
+    // 복구된 장르 목록을 기반으로 폼 내부 hidden input들 및 버튼 텍스트 강제 트리거링
+    if (genreDoneBtn) {
+      genreDoneBtn.click();
+    }
+  }
+
   alert('임시저장된 글을 불러왔습니다.');
 }
 
@@ -301,38 +310,42 @@ function deleteDraft(id) {
   renderDraftList();
 }
 
-document.getElementById('draftBtn').addEventListener('click', () => {
-  const now = new Date();
-  // Date 사용은 데모 목적의 UI 표시용
-  const hh = String(now.getHours()).padStart(2, '0');
-  const mm = String(now.getMinutes()).padStart(2, '0');
-  const timeStr = `${hh}:${mm}`;
+const draftBtn = document.getElementById('draftBtn');
+if (draftBtn) {
+  draftBtn.addEventListener('click', () => {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const timeStr = `${hh}:${mm}`;
 
-  const drafts = getDrafts();
-  drafts.push({
-    id: Date.now(),
-    title: document.getElementById('review_title').value.trim(),
-    category: document.getElementById('genre_category_id').value,
-    platform: document.getElementById('review_platform').value,
-    body: document.getElementById('review_content').value,
-    related: document.getElementById('review_related').value,
-    savedAt: timeStr,
+    // 선택된 장르 목록 (다대다 복수형 ID 추출)
+    const selectedIds = [];
+    if (genreGrid) {
+      genreGrid.querySelectorAll('.genre-chip.selected').forEach(chip => {
+        selectedIds.push(chip.getAttribute('data-genre-id'));
+      });
+    }
+
+    const drafts = getDrafts();
+    drafts.push({
+      id: Date.now(),
+      title: document.getElementById('review_title').value.trim(),
+      categories: selectedIds, // 다중 장르 저장
+      platform: document.getElementById('review_platform').value,
+      body: document.getElementById('review_content').value,
+      related: document.getElementById('review_related').value,
+      savedAt: timeStr,
+    });
+    setDrafts(drafts);
+    renderDraftList();
+
+    const hint = document.getElementById('autosaveHint');
+    if (hint) {
+      hint.textContent = `임시저장됨 (${timeStr})`;
+      hint.classList.add('saved');
+    }
   });
-  setDrafts(drafts);
-  renderDraftList();
+}
 
-  const hint = document.getElementById('autosaveHint');
-  hint.textContent = `임시저장됨 (${timeStr})`;
-  hint.classList.add('saved');
-});
-
+// 초기 로딩 목록 렌더링
 renderDraftList();
-
-/*document.getElementById('submitBtn').addEventListener('click', () => {
-  if (!document.getElementById('review_title').value.trim()) {
-    alert('제목을 입력해주세요.');
-    return;
-  }
-  alert('게시글이 등록되었습니다. (데모)');
-  location.href = '13_detail.html';
-});*/
