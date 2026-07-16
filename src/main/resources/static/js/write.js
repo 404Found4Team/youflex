@@ -50,14 +50,46 @@ document.getElementById('genreSaveBtn').addEventListener('click', () => {
   document.getElementById('genreModalBackdrop').classList.remove('open');
   alert(`선택된 취향: [${selectedGenres.join(', ')}]이 저장되었습니다.`);
 });*/
+// ===== 취향 선택(웅조)
+// 관련 장르 최대 3개까지 선택 가능
 const MAX_GENRE_SELECT = 3;
 const genreGrid = document.getElementById('genreGrid');
 genreGrid.querySelectorAll('.genre-chip').forEach((chip) => {
 	chip.addEventListener('click', ()=>{
-		
-	})
+		const selectedCount = genreGrid.querySelectorAll('.genre-chip.selected').length;
+		if(!chip.classList.contains('selected')&&selectedCount >= MAX_GENRE_SELECT){
+			alert(`관심 장르는 최대 ${MAX_GENRE_SELECT}개까지 선택할 수 있어요.`);
+		    return;
+		}
+		chip.classList.toggle('selected');
+	});
 });
 
+// 장르 선택 모달의 "취소"/"저장" 클릭 시 선택된 장르 id를 hidden input으로 담아
+// 실제 게시글 작성 폼(/review/write)을 제출. 선택을 안 했으면(스킵) 장르 없이 그대로 제출됨.
+function finishSignup(){
+	const form = document.getElementById('reviewForm');
+	genreGrid.querySelectorAll('.genre-chip.selected').forEach((chip) => {
+		const hidden = document.createElement('input');
+		hidden.type = 'hidden';
+		hidden.name = 'genreCategoryIds';
+		hidden.value = chip.dataset.genreId;
+		form.appendChild(hidden);
+		/*<form id="reviewForm" action="/review/write" method="post" enctype="multipart/form-data">
+		  	<input type="text" name="memberLoginid" />
+			<input type="password" name="memberPwd" />
+			<button type="submit">가입하기</button>
+			  
+			<input type="hidden" name="genreCategoryIds" value="1">
+			<input type="hidden" name="genreCategoryIds" value="3">
+		</form>
+		이런 식으로 form태그의 가장 아래쪽에 input태그를 만들어서 넣겠다는 뜻의 코드*/
+	})
+	form.submit();
+}
+
+document.getElementById('cancel').addEventListener('click', finishSignup);
+document.getElementById('save').addEventListener('click', finishSignup);
 
 // ===== 별점 클릭 처리(웅조) ===============
 		// let stars  = document.querySelectorAll(".rating-input span");
