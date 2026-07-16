@@ -1,42 +1,45 @@
 package com.youflex.service;
-
 import java.util.List;
+
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import com.youflex.dto.ChatMemberDTO;
 import com.youflex.dto.ChatroomDTO;
+import com.youflex.exception.DuplicateChatroomException;
 import com.youflex.mapper.ChatMemberMapper;
 import com.youflex.mapper.ChatroomMapper;
 
 import lombok.RequiredArgsConstructor;
 
-@Service // 스프링 빈으로 등록 (서비스 계층)
-@RequiredArgsConstructor // final 필드를 인자로 받는 생성자를 롬복이 자동 생성 (생성자 주입)
+@Service
+@RequiredArgsConstructor
 public class ChatroomService {
 
-    // 채팅방(chatroom) 테이블 관련 DB 접근을 담당하는 매퍼
     private final ChatroomMapper chatroomMapper;
-
-    // 채팅방 참여자(chat_member) 테이블 관련 DB 접근을 담당하는 매퍼
     private final ChatMemberMapper chatMemberMapper;
+    private final SimpMessagingTemplate messagingTemplate; // ★ 추가: 웹소켓 브로드캐스트용
 
-    /**
-     * 채팅방 생성 (방장 자동 입장 없이 단순 생성만 필요할 때 사용)
-     */
     public int createChatroom(ChatroomDTO chatroom) {
         return chatroomMapper.createChatroom(chatroom);
     }
 
     /**
-     * 채팅방 개설 + 개설자를 방장으로 자동 입장 (하나의 트랜잭션)
-     * - 컨트롤러의 createChatroom()에서 호출됨
+     * 채팅방 개설 + 개설자를 방장으로 자동 입장
+     * - 한 회원당 채팅방 1개만 개설 가능하도록 체크 추가
      */
     @Transactional
     public int createChatroomWithHost(ChatroomDTO chatroom) {
-        // 1. 채팅방 생성 (insert 후 useGeneratedKeys로 chatroomId가 chatroom 객체에 채워짐)
+
+        // ★ 이미 개설한 방이 있는지 확인
+        int existingCount = chatroomMapper.countChatroomByMemberId(chatroom.getMemberId());
+        if (existingCount > 0) {
+            throw new DuplicateChatroomException("이미 개설한 채팅방이 있습니다. 한 사람당 하나의 채팅방만 개설할 수 있습니다.");
+        }
+
         chatroomMapper.createChatroom(chatroom);
 
-        // 2. 개설자를 방장으로 등록
         ChatMemberDTO host = ChatMemberDTO.builder()
                 .memberId(chatroom.getMemberId())
                 .chatroomId(chatroom.getChatroomId())
@@ -45,35 +48,37 @@ public class ChatroomService {
                 .build();
         chatMemberMapper.insertChatMember(host);
 
-        // 3. 생성된 채팅방 ID 반환
+        // ★ 추가: 방 개설 후 최신 목록을 구독중인 모든 클라이언트에게 실시간 전송
+        broadcastChatroomList();
+
         return chatroom.getChatroomId();
     }
 
-    /**
-     * 채팅방 ID로 특정 채팅방 조회
-     */
     public ChatroomDTO getChatroom(int chatroomId) {
         return chatroomMapper.selectChatroomById(chatroomId);
     }
 
-    /**
-     * 전체 채팅방 목록 조회
-     */
     public List<ChatroomDTO> getAllChatrooms() {
         return chatroomMapper.selectAllChatrooms();
     }
 
-    /**
-     * 채팅방 정보 수정 (반환값: 수정된 row 수)
-     */
     public int updateChatroom(ChatroomDTO chatroom) {
         return chatroomMapper.updateChatroom(chatroom);
     }
 
-    /**
-     * 채팅방 삭제 (반환값: 삭제된 row 수)
-     */
     public int deleteChatroom(int chatroomId) {
-        return chatroomMapper.deleteChatroom(chatroomId);
+        int result = chatroomMapper.deleteChatroom(chatroomId);
+        // ★ 추가: 삭제 시에도 실시간 반영
+        broadcastChatroomList();
+        return result;
+    }
+
+    /**
+     * 현재 채팅방 목록을 /sub/chatroom-list 구독자 전체에게 전송
+     * (WebSocketConfig에서 enableSimpleBroker("/sub")로 설정했으므로 "/sub" prefix 사용)
+     */
+    private void broadcastChatroomList() {
+        List<ChatroomDTO> rooms = chatroomMapper.selectAllChatrooms();
+        messagingTemplate.convertAndSend("/sub/chatroom-list", rooms);
     }
 }

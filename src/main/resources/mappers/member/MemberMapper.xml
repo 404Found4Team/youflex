@@ -69,6 +69,13 @@
         </if>
     </select>
 
+    <!-- 마이페이지 등업신청 버튼 - 조건 검증 없이 접수만 하고 승인/반려는 관리자가 수동으로 처리 -->
+    <update id="requestGradeUpgrade" parameterType="int">
+        UPDATE member
+        SET member_grade_status = '신청'
+        WHERE member_id = #{memberId}
+    </update>
+
     <!--  -->
     <select id="findGradeUpgradeRequests" resultType="com.youflex.dto.MemberDTO">
         SELECT *
