@@ -3,7 +3,7 @@
 // ==========================================================================
 
 // ---- 로그인/권한 상태 시뮬레이션 (실제 구현 시 인증 상태로 대체) ----
-const DEMO_ROLE = localStorage.getItem("demoRole") || "guest"; // guest | user | critic | admin
+/*const DEMO_ROLE = localStorage.getItem("demoRole") || "guest"; // guest | user | critic | admin
 
 function applyRoleVisibility() {
   document.querySelectorAll("[data-role-visible]").forEach((el) => {
@@ -11,11 +11,11 @@ function applyRoleVisibility() {
     el.style.display = allowed.includes(DEMO_ROLE) ? "" : "none";
   });
 }
-
-function setDemoRole(role) {
+*/
+/*function setDemoRole(role) {
   localStorage.setItem("demoRole", role);
   location.reload();
-}
+}*/
 
 // ---- 오버레이 패널 (챗봇 / 채팅방) ----
 function initOverlay(panelId, backdropId, openTriggerIds, closeTriggerIds, bodyClass, toggleOnTrigger) {
@@ -63,7 +63,7 @@ function initTabs(tabGroupSelector) {
         buttons.forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
         panels.forEach((p) => {
-          p.style.display = p.dataset.tabPanel === targetSelector ? "" : "none";
+         p.style.display = p.dataset.tabPanel === targetSelector ? "" : "none";
         });
       });
     });
@@ -72,7 +72,6 @@ function initTabs(tabGroupSelector) {
 
 // ==========================================================================
 // 챗봇 퀴즈: DB에서 객관식 1문제 + OX 1문제를 뽑아 출제, 하루 3번 제한
-// (실제 구현 시 questionBank는 서버 DB 조회 결과로 대체)
 // ==========================================================================
 const QNA_QUIZ_DAILY_LIMIT = 3;
 const QNA_QUIZ_QUESTION_BANK = {
@@ -199,8 +198,6 @@ function initQnaChatbotQuiz() {
   renderCount();
 }
 
-initQnaChatbotQuiz();
-
 // ---- 방장(평론가) 퇴장 시 채팅방 삭제 경고 ----
 function confirmRoomLeave() {
   const ok = confirm(
@@ -251,11 +248,12 @@ function initQuizStart() {
   });
 }
 
-// ---- 채팅방: 실시간 채팅 입력/전송 & 방 개설(최대 인원) ----
+// ---- 채팅방: 실시간 채팅 입력/전송 & 방 개설 (실제 비동기 API 연동) ----
 function initChatroomChat() {
   const messages = document.getElementById("chatroomMessages");
   const input = document.getElementById("chat_message_content");
   const sendBtn = document.getElementById("chatroomSendBtn");
+  
   if (messages && input && sendBtn) {
     const send = () => {
       const text = input.value.trim();
@@ -283,13 +281,16 @@ function initChatroomChat() {
     });
   }
 
+  // ---- ★ 개설 탭 비동기 기능 통합 ----
   const roomNameInput = document.getElementById("chatroom_title");
   const maxUserInput = document.getElementById("chatroom_max_member");
   const createBtn = document.getElementById("chatroomCreateBtn");
+  
   if (roomNameInput && maxUserInput && createBtn) {
-    createBtn.addEventListener("click", () => {
+    createBtn.addEventListener("click", async () => {
       const name = roomNameInput.value.trim();
       const maxUsers = Number(maxUserInput.value);
+      
       if (!name) {
         alert("방 이름을 입력해주세요.");
         return;
@@ -298,15 +299,64 @@ function initChatroomChat() {
         alert("최대 인원은 2명 이상으로 입력해주세요.");
         return;
       }
-      alert(`채팅방이 개설되었습니다. (데모)\n방 이름: ${name}\n최대 인원: ${maxUsers}명`);
-      roomNameInput.value = "";
-      maxUserInput.value = "30";
+
+      // 서버 DB 전송용 데이터
+      const requestData = {
+        chatroomTitle: name,
+        chatroomMaxMember: maxUsers
+      };
+
+      try {
+        const response = await fetch('/api/chatroom', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestData)
+        });
+
+        if (response.ok) {
+          const chatroomId = await response.json();
+          console.log("생성된 채팅방 ID:", chatroomId);
+          alert(`채팅방이 성공적으로 개설되었습니다!`);
+
+          // 1. 채팅방 목록 영역에 신규 방 추가
+          const listContainer = document.getElementById("chatroomListContainer");
+          if (listContainer) {
+            const newRoom = document.createElement("div");
+            newRoom.className = "room-list-item";
+            newRoom.innerHTML = `
+              <div>
+                <div class="room-name">${name}</div>
+                <div class="room-count">1 / ${maxUsers}명</div>
+              </div>
+              <button class="btn btn-primary btn-sm">입장</button>
+            `;
+            listContainer.insertBefore(newRoom, listContainer.firstChild);
+          }
+
+          // 2. 입력 필드 초기화
+          roomNameInput.value = "";
+          maxUserInput.value = "10";
+
+          // 3. 자동으로 '목록' 탭으로 활성화 이동
+          const listTabButton = document.querySelector("[data-tab-target='list']");
+          if (listTabButton) {
+            listTabButton.click();
+          }
+
+        } else {
+          alert("채팅방 개설에 실패했습니다. (서버 응답 오류)");
+        }
+      } catch (error) {
+        console.error("비동기 통신 중 에러:", error);
+        alert("서버 연결에 실패했습니다. 네트워크 상태를 확인하세요.");
+      }
     });
   }
 }
 
-// ---- 취향/장르 선택 칩 (마이페이지 등 공용. 회원가입 취향 선택(#genreGrid)은
-//      최대 3개 제한이 있어서 join.js에서 별도로 처리하므로 여기서는 제외) ----
+// ---- 취향/장르 선택 칩 ----
 function initGenreChips() {
   document.querySelectorAll(".genre-chip").forEach((chip) => {
     if (chip.closest("#genreGrid")) return;
@@ -336,11 +386,9 @@ function initHeroSlider() {
   const dots = document.querySelectorAll(".hero-dots span");
   if (!slider || !slides.length) return;
 
-// 배너 3초 마다 자동으로 바뀜 -나영-
   const AUTO_PLAY_MS = 3000;
   let index = 0;
   let timerId = null;
-console.log(slides.length);
 
   function showSlide(i) {
     index = (i + slides.length) % slides.length;
@@ -391,8 +439,9 @@ function initCategoryNav() {
   });
 }
 
+// ---- DOM 로드 완료 후 실행 ----
 document.addEventListener("DOMContentLoaded", () => {
-  applyRoleVisibility();
+  /*applyRoleVisibility();*/
   initDropdowns();
   initHeroSlider();
   initCategoryNav();
@@ -411,32 +460,29 @@ document.addEventListener("DOMContentLoaded", () => {
   initQuizStart();
   initChatroomChat();
   initGenreChips();
+  initQnaChatbotQuiz();
 
-  const roleSwitcher = document.getElementById("demoRoleSwitcher");
+  /*const roleSwitcher = document.getElementById("demoRoleSwitcher");
   if (roleSwitcher) {
     roleSwitcher.value = DEMO_ROLE;
     roleSwitcher.addEventListener("change", (e) => setDemoRole(e.target.value));
-  }
+  }*/
 });
-// 화면에 .section-heading이 보일 때마다 등장 애니메이션 재생 -나영-
+
+// 화면에 .section-heading이 보일 때마다 등장 애니메이션 재생
 const headings = document.querySelectorAll('.section-heading');
 const observer = new IntersectionObserver((entries) => {
-  // console.log('IntersectionObserver entries:', entries);
   entries.forEach(entry => {
     if (entry.isIntersecting) {
-      // entry.target.style.animation = 'none';
-      // 강제로 리플로우 시켜서 애니메이션 재시작
-      void entry.target.offsetWidth;
+      void entry.target.offsetWidth; // 강제 리플로우
       entry.target.style.animation = 'heading-shine 4s ease-in-out infinite, heading-fade-in 0.6s ease-out';
     }
   });
 }, { threshold: 0.3 });
 
-// 푸터 - 맨 위로 가기 버튼
 headings.forEach(h => observer.observe(h));
 
-document
-        .getElementById("footerTopBtn")
-        .addEventListener("click", function () {
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        });
+// 푸터 - 맨 위로 가기 버튼
+document.getElementById("footerTopBtn").addEventListener("click", function () {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
