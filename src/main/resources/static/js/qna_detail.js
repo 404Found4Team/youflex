@@ -1,57 +1,3 @@
-const commentInput = document.getElementById('qna_comment_content');
-const commentCountLabel = document.getElementById('commentCountLabel');
-const commentList = document.getElementById('commentList');
-let commentCount = 3;
-
-document.getElementById('commentSubmitBtn').addEventListener('click', () => {
-  const val = commentInput.value.trim();
-  if (!val) {
-    alert('댓글 내용을 입력해주세요.');
-    return;
-  }
-  const now = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
-  const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
-
-  const item = document.createElement('div');
-  item.className = 'qna-comment-item';
-  item.innerHTML = `
-    <div class="qna-comment-left">
-      <div class="qna-comment-avatar"></div>
-      <div>
-        <span class="qna-comment-author">나</span><span class="qna-comment-date">${dateStr}</span>
-        <div class="qna-comment-body"></div>
-      </div>
-    </div>
-    <div style="display:flex;gap:6px;flex-shrink:0">
-      <button class="btn btn-sm btn-ghost" onclick="toggleReportForm(this)">신고</button>
-      <span class="qna-comment-more">⋮</span>
-    </div>
-    <div class="qna-report-form" style="display:none">
-      <label class="text-muted" style="font-size:12px">신고 사유</label>
-      <select>
-        <option>스팸 / 도배</option>
-        <option>욕설 / 비방</option>
-        <option>음란물</option>
-        <option>저작권 침해</option>
-        <option>기타</option>
-      </select>
-      <textarea placeholder="신고 사유를 구체적으로 입력해주세요"></textarea>
-      <div class="btn-row" style="margin-top:0">
-        <button type="button" class="btn btn-sm" onclick="closeReportForm(this)">취소</button>
-        <button type="button" class="btn btn-sm btn-primary" onclick="submitReportForm(this)">신고하기</button>
-      </div>
-    </div>
-  `;
-  item.querySelector('.qna-comment-body').textContent = val;
-  commentList.appendChild(item);
-
-  commentCount += 1;
-  commentCountLabel.textContent = `댓글 (${commentCount})`;
-
-  commentInput.value = '';
-});
-
 // ---- 댓글 "신고" 클릭 시 댓글 바로 아래로 펼쳐지는 인라인 신고폼 (답글달기와 같은 방식) ----
 function toggleReportForm(el) {
   const item = el.closest('.qna-comment-item');
@@ -86,4 +32,70 @@ function submitReportModal() {
   closeReportModal();
 }
 
+// ---- 질문 삭제: confirm은 호출부(th:onclick)에서 이미 처리되어 여기선 바로 요청 ----
+function deleteQna(qnaId) {
+  fetch(`/api/qna/${qnaId}`, { method: 'DELETE' })
+    .then(res => { if (res.ok) location.href = '/notice#qna'; else alert('삭제에 실패했습니다.'); });
+}
 
+// ---- 관리자 답변 삭제: confirm 후 DELETE 요청, 성공 시 페이지 새로고침 ----
+function deleteAnswer(qnaId, adminAnswerId) {
+  if (!confirm('답변을 삭제하시겠습니까?')) return;
+  fetch(`/api/qna/${qnaId}/answer/${adminAnswerId}`, { method: 'DELETE' })
+    .then(res => { if (res.ok) location.reload(); });
+}
+
+// ---- 댓글 삭제: confirm은 호출부(th:onclick)에서 이미 처리되어 여기선 바로 요청. memberId는 서버가 세션에서 확인 ----
+function deleteComment(commentId) {
+  fetch(`/api/qna/comments/${commentId}`, { method: 'DELETE' })
+    .then(res => { if (res.ok) location.reload(); else alert('삭제에 실패했습니다.'); });
+}
+
+// ---- 댓글 수정 폼 토글: 본문은 숨기고 수정 폼(textarea)을 보여줌 ----
+// .qna-comment-update-form은 qna-report-form 클래스를 같이 써서 display:flex 스타일을 재사용하므로 'flex'로 맞춤
+function toggleCommentUpdateForm(btn) {
+  const item = btn.closest('.qna-comment-item');
+  const body = item.querySelector('.qna-comment-body');
+  const form = item.querySelector('.qna-comment-update-form');
+  const isUpdating = form.style.display !== 'none';
+  form.style.display = isUpdating ? 'none' : 'flex';
+  body.style.display = isUpdating ? 'block' : 'none';
+}
+
+// ---- 댓글 수정 취소: 입력값 초기화 없이 폼만 닫고 본문을 다시 보여줌 ----
+function cancelUpdateComment(btn) {
+  const item = btn.closest('.qna-comment-item');
+  item.querySelector('.qna-comment-update-form').style.display = 'none';
+  item.querySelector('.qna-comment-body').style.display = 'block';
+}
+
+// ---- 댓글 수정 저장: PUT 요청 후 성공 시 페이지 새로고침 ----
+function saveUpdateComment(btn, commentId) {
+  const item = btn.closest('.qna-comment-item');
+  const content = item.querySelector('.qna-comment-update-input').value.trim();
+  if (!content) { alert('댓글 내용을 입력해주세요.'); return; }
+  fetch(`/api/qna/comments/${commentId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ qnaCommentContent: content })
+  }).then(res => { if (res.ok) location.reload(); else alert('수정에 실패했습니다.'); });
+}
+
+// ---- 댓글 등록 버튼 이벤트 바인딩 ----
+document.addEventListener('DOMContentLoaded', () => {
+  const submitBtn = document.getElementById('commentSubmitBtn');
+  if (!submitBtn) return;
+  submitBtn.addEventListener('click', () => {
+    const form = document.getElementById('qnaCommentForm');
+    const qnaId = form.dataset.qnaId;
+    const content = document.getElementById('qna_comment_content').value.trim();
+    // 빈 내용 검증
+    if (!content) { alert('댓글 내용을 입력해주세요.'); return; }
+    // 댓글 등록 API 호출 (memberId는 서버에서 세션 기반으로 세팅되어야 함 - 현재 바디에는 포함 안 됨)
+    fetch(`/api/qna/${qnaId}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ qnaCommentContent: content })
+    }).then(res => { if (res.ok) location.reload(); });
+  });
+});

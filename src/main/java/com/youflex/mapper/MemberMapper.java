@@ -17,8 +17,11 @@ public interface MemberMapper {
     // 회원가입 저장 (비밀번호는 서비스단에서 이미 해시된 값)
     int insertMember(MemberDTO memberDTO);
 
-    // 관리자 - 회원번호로 단건 조회(액션 처리 전 존재 확인용)
+    // 관리자 - 회원번호로 단건 조회(액션 처리 전 존재 확인용) / 마이페이지 내 정보 조회에도 사용
     MemberDTO findById(int memberId);
+
+    // 마이페이지 - 회원정보 수정(이름/이메일/전화번호/비밀번호)
+    void updateProfile(MemberDTO memberDTO);
 
     // 관리자 - 회원 목록(정상 회원만) 검색 + 페이징. keyword는 아이디/이름/이메일 부분일치.
     List<MemberDTO> findMembers(@Param("keyword") String keyword,
@@ -27,6 +30,9 @@ public interface MemberMapper {
 
     // 회원 목록 검색결과 총 개수(페이지네이션 계산용)
     int countMembers(@Param("keyword") String keyword);
+
+    // 마이페이지 - 등업신청 버튼 클릭 시 상태를 '신청'으로 전환(관리자 등업신청 관리 화면에 노출됨)
+    void requestGradeUpgrade(int memberId);
 
     // 관리자 - 등업(우수회원) 신청 대기 목록
     List<MemberDTO> findGradeUpgradeRequests();

@@ -50,6 +50,49 @@ public class MemberService {
         preferenceMappingMapper.insertPreferences(memberDTO.getMemberId(), limited);
     }
 
+    // ===================== 마이페이지 - 내 정보 =====================
+
+    // 내 정보 탭 조회(누적 경고 횟수 포함)
+    public MemberDTO getMemberDetail(int memberId) {
+        return memberMapper.findById(memberId);
+    }
+
+    // 회원정보 수정 전 현재 비밀번호 확인
+    public boolean isCurrentPasswordValid(int memberId, String currentPwd) {
+        MemberDTO member = memberMapper.findById(memberId);
+        return currentPwd.equals(member.getMemberPwd());
+    }
+
+    // 회원정보 수정 - 새 비밀번호를 입력하지 않았으면 기존 비밀번호를 그대로 유지
+    public void updateProfile(int memberId, String newPwd, MemberDTO updates) {
+        MemberDTO member = memberMapper.findById(memberId);
+        updates.setMemberId(memberId);
+        updates.setMemberPwd(newPwd != null && !newPwd.isBlank() ? newPwd : member.getMemberPwd());
+        memberMapper.updateProfile(updates);
+    }
+
+    // 취향 선택 모달의 초기 체크 표시용 - 현재 선택되어 있는 장르 id 목록 조회
+    public List<Integer> getMemberGenreCategoryIds(int memberId) {
+        return preferenceMappingMapper.selectGenreCategoryIdsByMemberId(memberId);
+    }
+
+    // 마이페이지 - 등업신청 버튼. 조건 검증 없이 접수만 하고, 승인/반려는 관리자가 수동으로 처리(등업신청 관리 화면).
+    public void requestGradeUpgrade(int memberId) {
+        memberMapper.requestGradeUpgrade(memberId);
+    }
+
+    // 취향 장르 변경 - 기존 선택을 전부 지우고 이번에 고른 것만 다시 저장(교체 방식)
+    public void updateGenrePreferences(int memberId, List<Integer> genreCategoryIds) {
+        preferenceMappingMapper.deletePreferencesByMemberId(memberId);
+        if (genreCategoryIds == null || genreCategoryIds.isEmpty()) {
+            return;
+        }
+        List<Integer> limited = genreCategoryIds.size() > MAX_GENRE_PREFERENCES
+                ? genreCategoryIds.subList(0, MAX_GENRE_PREFERENCES)
+                : genreCategoryIds;
+        preferenceMappingMapper.insertPreferences(memberId, limited);
+    }
+
     // ===================== 관리자 - 회원 관리 =====================
 
     private static final int MEMBER_PAGE_SIZE = 5;

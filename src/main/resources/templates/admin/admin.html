@@ -18,7 +18,7 @@
 
 <!-- 
   =========================================
-  메인 영역 -- 호진
+  메인 영역 
   =========================================
 -->
 <main class="container">
@@ -26,7 +26,7 @@
 
   <!--
     ========================================= 
-    대시보드 요약 (항상 표시) -- 호진
+    대시보드 요약 (항상 표시)
     =========================================
   -->
   <div class="mt-24">
@@ -61,7 +61,7 @@
 
   <!--
     ========================================= 
-    관리자 기능 탭 -- 호진
+    관리자 기능 탭 
     =========================================
     -->
   <nav class="admin-nav" data-tab-panels>
@@ -74,7 +74,7 @@
 
   <!--
     ========================================= 
-    회원 관리 탭 -- 호진
+    회원 관리 탭 
     =========================================
   -->
   <div data-tab-panel="users" class="mt-24">
@@ -86,7 +86,7 @@
 
     <!-- 
       =========================================
-      회원 목록 -- 호진
+      회원 목록 
       =========================================
       -->
     <div data-subpanel="list">
@@ -122,7 +122,7 @@
 
     <!-- 
       =========================================
-      등업 신청 -- 호진
+      등업 신청 
       =========================================
       -->
     <div data-subpanel="promote" style="display:none">
@@ -152,7 +152,7 @@
 
     <!-- 
       =========================================
-      탈퇴 신청 -- 호진
+      탈퇴 신청 
       =========================================
       -->
     <div data-subpanel="withdraw" style="display:none">
@@ -183,7 +183,7 @@
 
   <!-- 
     =========================================
-    신고 처리 -- 호진
+    신고 처리 
     =========================================
     -->
   <div data-tab-panel="reports" class="mt-24" style="display:none">
@@ -220,7 +220,7 @@
 
   <!-- 
     =========================================
-    Q&A 답변 -- 호진
+    Q&A 답변 
     =========================================
     -->
   <div data-tab-panel="qna" class="mt-24" style="display:none">
@@ -254,7 +254,7 @@
 
   <!-- 
     =========================================
-    공지사항 등록 -- 호진
+    공지사항 등록 
     =========================================
     -->
   <div data-tab-panel="notice" class="mt-24" style="display:none">
@@ -275,7 +275,7 @@
 
   <!--
     =========================================
-    배너 설정 -- 호진
+    배너 설정 
     =========================================
     -->
   <div data-tab-panel="banner" class="mt-24" style="display:none">
@@ -305,7 +305,7 @@
 
 <!-- 
   =========================================
-  Q&A 답변 작성/수정 모달 -- 호진
+  Q&A 답변 작성/수정 모달 
   =========================================
   -->
 <div class="report-modal-backdrop" id="qnaModalBackdrop">
@@ -330,7 +330,7 @@
 
 <!-- 
   =========================================
-  경고 처리 모달 -- 호진
+  경고 처리 모달 
   =========================================
 -->
 <div class="report-modal-backdrop" id="warningModalBackdrop">
@@ -352,7 +352,7 @@
 
 <!-- 
   =========================================
-  경고 차감 모달 -- 호진
+  경고 차감 모달 
   =========================================
   -->
 <div class="report-modal-backdrop" id="warningRevokeModalBackdrop">
@@ -369,7 +369,7 @@
 
 <!-- 
   =========================================
-  배너 추가/수정 모달 -- 호진
+  배너 추가/수정 모달 
   ========================================= 
   -->
 <div class="report-modal-backdrop" id="bannerModalBackdrop">
@@ -404,28 +404,8 @@
   </div>
 </div>
 
-<!-- 
-  =========================================
-  푸터 영역 -- 호진
-  ========================================= 
-  -->
-<footer class="site-footer main-footer">
-  <div class="container main-footer-inner">
-    <div class="main-footer-brand">
-      <span class="logo"><img src="assets/img/logo.png" alt="YouFlex" /></span>
-      <p>당신의 콘텐츠 취향을 연결하는<br />OTT 리뷰 &amp; 커뮤니티 플랫폼</p>
-    </div>
-    <div class="main-footer-info">
-      <p>(주)YouFlex&nbsp;&nbsp;|&nbsp;&nbsp;대표: YouFlex&nbsp;&nbsp;|&nbsp;&nbsp;사업자등록번호: 000-00-00000</p>
-      <p>개인정보관리책임자: YouFlex</p>
-      <p>이메일: youflex@youflex.com&nbsp;&nbsp;|&nbsp;&nbsp;고객센터: 00-000-0000</p>
-    </div>
-    <div class="main-footer-meta">
-      <p>&copy; 2026 YouFlex. All rights reserved.</p>
-    </div>
-    <button class="main-footer-top" id="footerTopBtn" title="맨 위로">↑</button>
-  </div>
-</footer>
+<!-- 공통 푸터 -->
+<footer class="site-footer main-footer" th:replace="~{fragments/layout :: footer}"></footer>
 
 <script src="/js/app.js"></script>
 <script src="/js/admin.js"></script>
