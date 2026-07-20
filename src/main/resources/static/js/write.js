@@ -213,9 +213,28 @@ if (imgInput && imgPreview) {
   });
 }
 
+const draftBtn = document.getElementById('draftBtn');
+
+if(draftBtn){
+	draftBtn.addEventListener('click', ()=>{
+		const titleInput = document.getElementById('review_title');
+		const contentInput = document.getElementById('review_content');
+		
+		const title = titleInput ? titleInput.value.trim() : '';
+		const content = contentInput ? contentInput.value.trim() : '';
+		
+		if(!title && !content){
+			alert('제목이나 내용 중 하나 이상 입력 후 임시저장해 주세요.');
+			return;
+		}
+		
+		const formData = new FormData();	/*모르는 부분*/
+		
+	})
+}
 
 // ===== [4] 로컬 스토리지 기반 임시저장 기능 =====
-function renderDraftList() {
+/*function renderDraftList() {
   const drafts = getDrafts();
   const listEl = document.getElementById('draftList');
   const emptyMsg = document.getElementById('draftEmptyMsg');
@@ -345,7 +364,7 @@ if (draftBtn) {
       hint.classList.add('saved');
     }
   });
-}
+}*/
 
 // 초기 로딩 목록 렌더링
-renderDraftList();
+/*renderDraftList();*/
