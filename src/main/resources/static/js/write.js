@@ -229,7 +229,9 @@ if(draftBtn){
 			return;
 		}
 		
-		const formData = new FormData();	/*모르는 부분*/
+		
+		/*new FormData() : HTML폼 전송 데이터를 자바스크립트 객체 형태로 쉽게 만들 수 있게 해주는 기능. key-value쌍으로 데이터를 담아 백엔드로 전송할 수 있음.*/
+		const formData = new FormData();
 		formData.append('reviewDraftTitle', title);	/*데이터 추가 : append(key, value)*/
 		formData.append('reviewDraftContent', content);
 		
@@ -238,14 +240,15 @@ if(draftBtn){
 			body: formData
 		})
 		.then(response => {
-			if(response.status === 401){	/*모르는 부분*/
+			/*401 : 서버(Spring)에서 반환한 HTTP응답 상태 코드. 로그인하지 않은 사용자가 접근했을 때 리턴하도록 설정된 에러 코드*/
+			if(response.status === 401){
 				alert('로그인이 필요한 기능입니다.');
 				return;
 			}
 			if(response.ok){
 				// 저장 성공 시 현재 시각 표시 (예 : 15:08)
-				const now = new Date();	/*모르는 부분*/
-				const hh = String(now.getHours()).padStart(2, '0');	/*모르는 부분*/
+				const now = new Date();	/*new Date() : 현재 날짜와 시간 정보를 가지고 있는 내장 객체*/
+				const hh = String(now.getHours()).padStart(2, '0');	/*padstart(2, '0') : 문자열의 길이가 설정한 값(2자기)보다 작으면, 앞부분을 지정한 문자('0')로 채워주는 함수. 9분->09분*/
 				const mm = String(now.getMinutes()).padStart(2, '0');
 				const timeStr = `${hh}:${mm}`;
 				
@@ -265,6 +268,188 @@ if(draftBtn){
 			alert('서버 통신 중 오류가 발생했습니다.');
 		});
 	});
+}
+
+// ===== [4] 서버 DB 기반 임시저장 관리 기능 =====
+
+// 페이지 로드 시 임시저장 목록 불러오기 실행
+document.addEventListener('DOMContentLoaded', () => {
+  fetchDraftList();
+});
+
+// 1. 임시저장 목록 서버에서 조회해 오기
+function fetchDraftList() {
+  fetch('/review/draft/list')
+    .then(response => {
+      if (!response.ok) throw new Error('목록 조회 실패');
+      return response.json();
+    })
+    .then(drafts => {
+      renderDraftList(drafts);
+    })
+    .catch(error => {
+      console.error('Draft list fetch error:', error);
+    });
+}
+
+// 2. 화면에 임시저장 목록 UI 렌더링하기 (사진의 UI 구현)
+function renderDraftList(drafts) {
+  const listEl = document.getElementById('draftList');
+  const emptyMsg = document.getElementById('draftEmptyMsg');
+
+  if (!listEl) return;
+
+  listEl.innerHTML = ''; // 기존 목록 초기화
+
+  if (!drafts || drafts.length === 0) {
+    if (emptyMsg) emptyMsg.style.display = 'block';
+    return;
+  }
+  if (emptyMsg) emptyMsg.style.display = 'none';
+
+  drafts.forEach(draft => {
+    // 백엔드에서 받아온 DB 칼럼명/DTO 필드명 매핑
+    const draftId = draft.reviewDraftId; 
+    const title = draft.reviewDraftTitle || '(제목 없음)';
+    
+    // 시간 포맷 처리 (예: "15:55" 형태로 출력)
+    let timeStr = '';
+    if (draft.reviewDraftSavedAt) {
+      const dateObj = new Date(draft.reviewDraftSavedAt);
+      const hh = String(dateObj.getHours()).padStart(2, '0');
+      const mm = String(dateObj.getMinutes()).padStart(2, '0');
+      timeStr = `${hh}:${mm}`;
+    }
+
+    // 아이템 생성
+    const item = document.createElement('div');
+    item.className = 'draft-item';
+
+    // 정보 영역 (제목 + 시간)
+    const infoEl = document.createElement('div');
+    infoEl.className = 'draft-info';
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'draft-title';
+    titleEl.textContent = title;
+
+    const timeEl = document.createElement('div');
+    timeEl.className = 'draft-time';
+    timeEl.textContent = timeStr;
+
+    infoEl.appendChild(titleEl);
+    infoEl.appendChild(timeEl);
+
+    // 버튼 영역 (불러오기 + 삭제)
+    const actionsEl = document.createElement('div');
+    actionsEl.className = 'draft-actions';
+
+    const loadBtn = document.createElement('button');
+    loadBtn.type = 'button';
+    loadBtn.className = 'btn btn-sm btn-load';
+    loadBtn.textContent = '불러오기';
+    loadBtn.addEventListener('click', () => loadDraft(draftId));
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.className = 'btn btn-sm btn-delete';
+    deleteBtn.textContent = '삭제';
+    deleteBtn.addEventListener('click', () => deleteDraft(draftId));
+
+    actionsEl.appendChild(loadBtn);
+    actionsEl.appendChild(deleteBtn);
+
+    item.appendChild(infoEl);
+    item.appendChild(actionsEl);
+
+    listEl.appendChild(item);
+  });
+}
+
+// 3. 임시저장 저장 버튼 클릭 이벤트
+//const draftBtn = document.getElementById('draftBtn');
+if (draftBtn) {
+  draftBtn.addEventListener('click', () => {
+    const titleInput = document.getElementById('review_title');
+    const contentInput = document.getElementById('review_content');
+
+    const title = titleInput ? titleInput.value.trim() : '';
+    const content = contentInput ? contentInput.value.trim() : '';
+
+    if (!title && !content) {
+      alert('제목이나 내용 중 하나 이상 입력 후 임시저장해 주세요.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('reviewDraftTitle', title);
+    formData.append('reviewDraftContent', content);
+
+    fetch('/review/draft/save', {
+      method: 'POST',
+      body: formData
+    })
+      .then(response => {
+        if (response.status === 401) {
+          alert('로그인이 필요한 기능입니다.');
+          return;
+        }
+        if (response.ok) {
+          alert('임시저장 되었습니다.');
+          // 저장 후 목록을 다시 조회하여 목록 갱신
+          fetchDraftList();
+        } else {
+          alert('임시저장에 실패했습니다.');
+        }
+      })
+      .catch(error => {
+        console.error('Draft save error:', error);
+        alert('서버 통신 중 오류가 발생했습니다.');
+      });
+  });
+}
+
+// 4. 불러오기 버튼 처리
+function loadDraft(draftId) {
+  fetch(`/review/draft/detail?id=${draftId}`)
+    .then(response => {
+      if (!response.ok) throw new Error('임시저장 조회 실패');
+      return response.json();
+    })
+    .then(draft => {
+      const titleInput = document.getElementById('review_title');
+      const contentInput = document.getElementById('review_content');
+
+      if (titleInput) titleInput.value = draft.reviewDraftTitle || '';
+      if (contentInput) contentInput.value = draft.reviewDraftContent || '';
+
+      alert('임시저장된 내용을 불러왔습니다.');
+    })
+    .catch(error => {
+      console.error('Draft load error:', error);
+      alert('임시저장 불러오기에 실패했습니다.');
+    });
+}
+
+// 5. 삭제 버튼 처리
+function deleteDraft(draftId) {
+  if (!confirm('이 임시저장 글을 삭제하시겠습니까?')) return;
+
+  fetch(`/review/draft/delete?id=${draftId}`, {
+    method: 'DELETE' // 또는 POST 방식 (백엔드 매핑에 맞게 조정)
+  })
+    .then(response => {
+      if (response.ok) {
+        alert('삭제되었습니다.');
+        fetchDraftList(); // 삭제 후 목록 다시 조회
+      } else {
+        alert('삭제에 실패했습니다.');
+      }
+    })
+    .catch(error => {
+      console.error('Draft delete error:', error);
+      alert('삭제 중 오류가 발생했습니다.');
+    });
 }
 
 // ===== [4] 로컬 스토리지 기반 임시저장 기능 =====
