@@ -48,7 +48,9 @@
   <!-- 내 정보 수정 -->
   <div data-tab-panel="profile" class="mt-24">
     <form id="profileForm" th:action="@{/mypage}" method="post">
+    <!-- 현재 비밀번호가 틀렸을 때만 컨트롤러가 채워서 다시 이 화면으로 돌려보내는 에러 메시지 -->
     <div th:if="${profileError}" th:text="${profileError}" style="color:var(--danger);font-size:13px;margin-bottom:12px">현재 비밀번호가 일치하지 않습니다.</div>
+    <!-- 저장 성공 후 redirect:/mypage로 넘어왔을 때 1회성으로만 보이는 flash 메시지(새로고침하면 사라짐) -->
     <div th:if="${profileSuccess}" th:text="${profileSuccess}" style="color:var(--success);font-size:13px;margin-bottom:12px">회원정보가 저장되었습니다.</div>
     <div class="form-row">
       <label>이름</label>
@@ -235,6 +237,7 @@
         <h2 class="genre-title">카테고리 선택</h2>
         <p class="genre-sub">관심 있는 장르를 선택해주세요 (최대 3개)</p>
         <div class="genre-grid" id="genreGrid">
+          <!-- myGenreCategoryIds(컨트롤러가 내려준 기존 선택 목록)에 들어있는 장르면 처음부터 selected로 렌더링 -->
           <button type="button" class="genre-chip"
                   th:each="genre : ${genres}"
                   th:classappend="${myGenreCategoryIds.contains(genre.genreCategoryId)} ? 'selected'"

@@ -38,6 +38,7 @@ document.getElementById('rankUpBtn').addEventListener('click', () => {
 const genreGrid = document.getElementById('genreGrid');
 const MAX_GENRE_SELECT = 3;
 
+// 지금 화면에 체크(selected) 표시되어 있는 칩들의 data-genre-id 목록을 뽑아냄
 function getSelectedGenreIds() {
   return Array.from(genreGrid.querySelectorAll('.genre-chip.selected')).map((chip) => chip.dataset.genreId);
 }
@@ -45,17 +46,20 @@ function getSelectedGenreIds() {
 // 취소(나중에 설정하기) 시 되돌릴 수 있도록 마지막으로 저장 완료된 상태를 기억해둠
 let confirmedGenreIds = getSelectedGenreIds();
 
+// 주어진 id 목록에 맞춰 칩들의 selected 클래스를 다시 그려줌(모달을 다시 열 때 사용)
 function applyGenreSelection(ids) {
   genreGrid.querySelectorAll('.genre-chip').forEach((chip) => {
     chip.classList.toggle('selected', ids.includes(chip.dataset.genreId));
   });
 }
 
+// "❤️ 장르 선택" 버튼 - 모달을 열 때마다 마지막으로 저장된 상태로 칩 선택을 리셋한 뒤 보여줌
 document.getElementById('tasteBtn').addEventListener('click', () => {
   applyGenreSelection(confirmedGenreIds);
   document.getElementById('genreModalBackdrop').classList.add('open');
 });
 
+// 장르 칩 클릭 시 선택/해제 토글. 이미 3개를 골랐는데 새로 선택하려 하면 막고 안내만 띄움
 genreGrid.querySelectorAll('.genre-chip').forEach((chip) => {
   chip.addEventListener('click', () => {
     const selectedCount = genreGrid.querySelectorAll('.genre-chip.selected').length;
@@ -67,10 +71,12 @@ genreGrid.querySelectorAll('.genre-chip').forEach((chip) => {
   });
 });
 
+// "나중에 설정하기" - 서버에 아무것도 보내지 않고 모달만 닫음(선택 내용은 다음에 열 때 버려짐)
 document.getElementById('genreSkipBtn').addEventListener('click', () => {
   document.getElementById('genreModalBackdrop').classList.remove('open');
 });
 
+// "완료" - 현재 선택된 장르 id들을 폼 형식으로 묶어 /mypage/genres에 저장(기존 선택은 서버에서 통째로 교체됨)
 document.getElementById('genreDoneBtn').addEventListener('click', () => {
   const selectedIds = getSelectedGenreIds();
   const body = selectedIds.map((id) => 'genreCategoryIds=' + encodeURIComponent(id)).join('&');
@@ -81,6 +87,7 @@ document.getElementById('genreDoneBtn').addEventListener('click', () => {
   })
     .then((res) => {
       if (!res.ok) throw new Error('genre update failed');
+      // 저장 성공 시에만 "확정 상태"를 갱신 - 실패하면 다음에 모달 열었을 때 원래 상태로 되돌아가야 하므로
       confirmedGenreIds = selectedIds;
       document.getElementById('genreModalBackdrop').classList.remove('open');
       alert('취향이 저장되었습니다.');

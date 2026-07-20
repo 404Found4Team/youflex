@@ -138,7 +138,11 @@ public class MemberController {
             model.addAttribute("myInfo", memberService.getMemberDetail(memberId));
             model.addAttribute("genres", genreCategoryService.getAllGenres());
             model.addAttribute("myGenreCategoryIds", memberService.getMemberGenreCategoryIds(memberId));
+            // 비밀번호가 틀리면 여기서 바로 mypage 화면을 다시 그려서 profileError를 보여주고, 저장은 하지 않음
+            return "member/mypage";
         }
+        memberService.updateProfile(memberId, memberDTO.getMemberPwd(), memberDTO);
+        // 헤더 등에서 쓰는 session.loginMember도 최신 정보로 갱신
         session.setAttribute("loginMember", memberService.getMemberDetail(memberId));
         // redirect 후 /mypage 화면에서 1회성으로 저장 완료 메시지를 띄우기 위한 flash attribute
         redirectAttributes.addFlashAttribute("profileSuccess", "회원정보가 저장되었습니다.");
