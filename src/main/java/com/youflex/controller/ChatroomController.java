@@ -78,4 +78,5 @@ public class ChatroomController {
     public int deleteChatroom(@PathVariable int chatroomId) {
         return chatroomService.deleteChatroom(chatroomId);
     }
+
 }

@@ -693,8 +693,64 @@ function initChatroomMenu() {
             leaveChatroom();
         });
     }
+
+    console.log("성공적으로 입장한 채팅방 ID:", chatroomId, "/ 제목:", chatroomTitle);
+}
+// 케밥 메뉴 열기/닫기
+const chatroomMenuBtn = document.getElementById('chatroomMenuBtn');
+const chatroomDropdown = document.getElementById('chatroomDropdown');
+if (chatroomMenuBtn && chatroomDropdown) {
+  chatroomMenuBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    chatroomDropdown.classList.toggle('open');
+  });
+  // 메뉴 바깥 클릭 시 닫기
+  document.addEventListener('click', function (e) {
+    if (!chatroomDropdown.contains(e.target) && e.target !== chatroomMenuBtn) {
+      chatroomDropdown.classList.remove('open');
+    }
+  });
+  // 메뉴 안 토글 스위치 클릭 시엔 메뉴가 안 닫히도록
+  chatroomDropdown.querySelector('.toggle-item').addEventListener('click', function (e) {
+    e.stopPropagation();
+  });
 }
 
+// 알림 켜기/끄기
+const chatroomNotifyToggle = document.getElementById('chatroomNotifyToggle');
+if (chatroomNotifyToggle) {
+  chatroomNotifyToggle.addEventListener('change', function () {
+    const isOn = this.checked;
+    fetch('/chatroom/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notifyOn: isOn })
+    }).catch(err => console.error('알림 설정 저장 실패:', err));
+  });
+}
+
+// 채팅방 나가기 버튼
+const chatroomLeaveBtn = document.getElementById('chatroomLeaveBtn');
+if (chatroomLeaveBtn) {
+  chatroomLeaveBtn.addEventListener('click', function () {
+    if (chatroomDropdown) chatroomDropdown.classList.remove('open');
+    if (!confirm('채팅방에서 나가시겠습니까?')) return;
+
+    // 입장 시 저장해둔 현재 방 ID 사용 (예: chatroomPanel.dataset.currentRoomId)
+    const roomId = document.getElementById('chatroomPanel').dataset.currentRoomId;
+
+    fetch(`/chatroom/${roomId}/leave`, { method: 'POST' })
+      .then(res => {
+        if (res.ok) {
+          alert('채팅방에서 나갔습니다.');
+          document.querySelector('[data-tab-target="list"]').click(); // 목록 탭으로 이동
+        } else {
+          alert('나가기에 실패했습니다.');
+        }
+      })
+      .catch(err => console.error('나가기 요청 실패:', err));
+  });
+}
 // ---- 취향/장르 선택 칩 (클릭 시 선택 표시 토글) ----
 function initGenreChips() {
     document.querySelectorAll(".genre-chip").forEach((chip) => {

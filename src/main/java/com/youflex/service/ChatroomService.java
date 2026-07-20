@@ -104,7 +104,6 @@ public class ChatroomService {
                     .chatMemberRole("참여자")
                     .chatMemberStatus("참여중")
                     .build();
-
             chatMemberMapper.insertChatMember(participant);
         } catch (org.springframework.dao.DuplicateKeyException e) {
             // 이미 입장한 상태라면 에러를 발생시키지 않고 정상 처리(재입장)로 간주
