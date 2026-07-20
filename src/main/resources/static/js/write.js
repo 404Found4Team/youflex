@@ -22,14 +22,14 @@ const genreDoneBtn = document.getElementById('genreDoneBtn');       // 저장 �
 // 1. 장르 선택 모달 열기
 if (tasteBtn && genreModal) {
   tasteBtn.addEventListener('click', () => {
-    genreModal.classList.add('open');
+    genreModal.classList.add('open');	/*common.css에 .genre-modal-backdrop.open와 관련됨*/
   });
 }
 
 // 2. 장르 선택 모달 닫기 (취소 클릭 시)
 if (genreSkipBtn && genreModal) {
   genreSkipBtn.addEventListener('click', () => {
-    genreModal.classList.remove('open');
+    genreModal.classList.remove('open');	/*common.css에 .genre-modal-backdrop.open와 관련됨*/
   });
 }
 
@@ -58,8 +58,8 @@ if (genreGrid) {
 // 4. 저장 완료 버튼 클릭 시 처리 (버튼 텍스트 변경 로직 제외)
 if (genreDoneBtn && genreModal) {
   genreDoneBtn.addEventListener('click', () => {
-    const selectedChips = genreGrid.querySelectorAll('.genre-chip.selected');
-    const selectedGenres = [];
+    const selectedChips = genreGrid.querySelectorAll('.genre-chip.selected');	/*.selected가 붙어 있는 칩들만 찾아서 selectedChips에 담는다.*/
+    const selectedGenres = [];	/*선택된 장르의 정보를 저장할 배열 생성*/
     
     selectedChips.forEach(chip => {
       // th:attr="data-genre-id=${genre.genreCategoryId}" 로 입력된 id 추출
@@ -82,7 +82,7 @@ if (genreDoneBtn && genreModal) {
 
       // 선택한 장르 개수(최대 3개)만큼 hidden input을 생성하여 전송 폼에 주입
       selectedGenres.forEach(genre => {
-        const hiddenInput = document.createElement('input');
+        const hiddenInput = document.createElement('input');	/*input태그 생성*/
         hiddenInput.type = 'hidden';
         hiddenInput.name = 'genreCategoryIds'; // Controller에서 받을 List<Integer> 필드명
         hiddenInput.value = genre.id;
