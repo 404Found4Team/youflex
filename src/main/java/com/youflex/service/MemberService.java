@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import com.youflex.dto.MemberDTO;
 import com.youflex.dto.PageInfo;
 import com.youflex.mapper.MemberMapper;
-import com.youflex.mapper.PreferenceMappingMapper;
+import com.youflex.mapper.MemberMappingMapper;
 
 import lombok.RequiredArgsConstructor;
 
@@ -18,7 +18,7 @@ public class MemberService {
     private static final int MAX_GENRE_PREFERENCES = 3;
 
     private final MemberMapper memberMapper;
-    private final PreferenceMappingMapper preferenceMappingMapper;
+    private final MemberMappingMapper preferenceMappingMapper;
 
     // 회원가입 아이디 중복확인(/join/check-id)과 가입 처리(join) 양쪽에서 사용
     public boolean isLoginIdTaken(String memberLoginid) {

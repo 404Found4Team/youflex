@@ -26,8 +26,9 @@
 - `review`는 `genre_category_id` 컬럼이 없음(다중 장르 선택을 위해 빠짐). 장르는
   `review_mapping`(`review_id`, `genre_category_id` 복합 PK) 다대다 테이블로 따로 관리함
   — 게시글 저장 시 `review` INSERT 후 `review_mapping`에 선택한 장르만큼 별도 INSERT.
-- `quiz_attempt`는 `quiz_attempt_date`를 트리거가 `quiz_attempt_attempted_at`에서
-  자동으로 채워줌 — insert 시 직접 넣을 필요 없음.
+- `quiz_attempt`의 `quiz_attempt_date`는 (예전엔 트리거가 자동으로 채워준다고 적혀 있었지만)
+  실제 DB에는 그 트리거가 없고 컬럼도 DEFAULT가 없음(NOT NULL). insert 시 `CURDATE()`로 직접
+  채워야 함 — 안 넣으면 "Field 'quiz_attempt_date' doesn't have a default value" 에러 발생.
 - FK는 대부분 `ON DELETE CASCADE` — 회원 탈퇴(row 삭제) 시 관련 데이터가 통째로
   같이 삭제됨. (소프트 삭제면 `member_delete_status`만 바꿔야지 실제 delete 하면 안 됨)
 

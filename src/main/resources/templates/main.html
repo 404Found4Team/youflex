@@ -514,55 +514,7 @@
   -->
     <button class="fab" id="chatbotFab" title="챗봇 실행">🤖</button>
     <div class="overlay-backdrop" id="chatbotBackdrop"></div>
-    <aside class="slide-panel" id="chatbotPanel">
-      <div class="panel-header">
-        <h3>🤖 YouFlex 챗봇</h3>
-        <button class="panel-close" id="chatbotClose">✕</button>
-      </div>
-      <div class="panel-body">
-        <div class="chat-msg">
-          <div class="avatar"></div>
-          <div class="bubble">
-            무엇을 도와드릴까요? 객관식 1문제 + OX 1문제, 하루 3번까지 풀 수
-            있어요!
-          </div>
-        </div>
-        <div class="quiz-box" id="qnaQuizBox">
-          <div class="quiz-count" id="qnaQuizCount">
-            🎯 오늘 남은 퀴즈 횟수: 3/3
-          </div>
-          <button class="btn btn-sm btn-primary" id="qnaQuizStartBtn">
-            퀴즈 시작
-          </button>
-
-          <div id="qnaQuizPlay" style="display: none">
-            <div class="quiz-progress" id="qnaQuizProgress"></div>
-            <div class="quiz-question" id="qnaQuizQuestion"></div>
-            <div class="quiz-options" id="qnaQuizOptions"></div>
-            <button
-              class="btn btn-sm btn-primary"
-              id="qnaQuizNextBtn"
-              style="display: none"
-            >
-              다음 문제 ›
-            </button>
-          </div>
-
-          <div
-            class="quiz-result"
-            id="qnaQuizResult"
-            style="display: none"
-          ></div>
-        </div>
-      </div>
-      <div class="panel-input-row">
-        <input type="text" placeholder="질문을 입력하세요" /><button
-          class="btn btn-primary"
-        >
-          전송
-        </button>
-      </div>
-    </aside>
+    <aside class="slide-panel" id="chatbotPanel" th:replace="~{fragments/layout :: chatbot}"></aside>
 
     <!-- 
   ================================
