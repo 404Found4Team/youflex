@@ -461,6 +461,11 @@ function initChatroomChat() {
                 alert("최대 인원은 2명 이상으로 입력해주세요.");
                 return;
             }
+            // 최대 인원 30명 초과 검증 
+            if (maxUsers > 30) {
+                alert("최대 인원은 30명을 초과할 수 없습니다.");
+                return;
+            }
 
             // 서버로 보낼 요청 바디
             const requestData = {
@@ -505,35 +510,55 @@ function initChatroomChat() {
 }
 
 /**
- * ★★★ 채팅방 "입장" 버튼을 눌렀을 때 실제로 실행되는 함수 ★★★
- * 
- * @param {number|string} [chatroomId]    - 입장한 채팅방의 고유 id
- * @param {string}        [chatroomTitle] - 입장한 채팅방의 이름 (제목 표시에 사용)
+ * ★★★ 채팅방 "입장" 버튼을 눌렀을 때 실제로 실행되는 통합 함수 ★★★
+ * - 1. 백엔드 서버로 POST 요청을 보내 DB(chat_member)에 입장 정보 저장
+ * - 2. 채팅 탭으로 화면 전환 및 상단 타이틀 변경
+ * - 3. 화면 채팅창에 'OO님이 입장했습니다' 시스템 메시지 추가
  */
-function enterChatroom(chatroomId, chatroomTitle) {
-    // 1단계: 채팅방 패널 안의 [채팅] 탭 버튼을 찾음
-    const chatTab = document.querySelector('[data-tab-target="chat"]');
-
-    if (chatTab) {
-        // 2단계: [채팅] 탭 버튼을 "코드로" 클릭하여 패널 전환 자동 수행
-        chatTab.click();
-    } else {
-        console.error("채팅 탭 버튼을 찾을 수 없습니다.");
+async function enterChatroom(chatroomId, chatroomTitle) {
+    if (!chatroomId) {
+        console.error("채팅방 ID가 없습니다.");
         return;
     }
 
-    // 3단계: 입장한 방의 제목을 채팅창 상단에 반영
+    // 1. 서버로 입장 요청 전송 (실제 DB chat_member 테이블에 INSERT)
+    try {
+        const response = await fetch(`/api/chatroom/${chatroomId}/enter`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            alert(errorText || "채팅방 입장 처리에 실패했습니다.");
+            return;
+        }
+    } catch (error) {
+        console.error("서버 통신 에러:", error);
+        alert("서버 연결에 실패했습니다. 네트워크 상태를 확인하세요.");
+        return;
+    }
+
+    // 2. 채팅방 패널 안의 [채팅] 탭 버튼을 찾아 자동으로 클릭(화면 전환)
+    const chatTab = document.querySelector('[data-tab-target="chat"]');
+    if (chatTab) {
+        chatTab.click();
+    }
+
+    // 3. 입장한 방의 제목을 채팅창 상단에 반영
     const titleEl = document.getElementById("chatroomTitleText");
     if (titleEl && chatroomTitle) {
         titleEl.textContent = `💬 ${chatroomTitle}`;
     }
 
-    // 4단계: 세션에 있는 실제 로그인 회원 이름을 가져와서 입장 메시지 동적 생성
+    // 4. 로그인한 회원 이름을 가져와서 채팅창에 입장 시스템 메시지 표시
     const memberNameInput = document.getElementById("currentMemberName");
-    const loginMemberName = memberNameInput ? memberNameInput.value : "회원";
+    const loginMemberName = memberNameInput && memberNameInput.value.trim() !== "" ? memberNameInput.value : "회원";
 
     const messages = document.getElementById("chatroomMessages");
-    if (messages && loginMemberName) {
+    if (messages) {
         const joinMsg = document.createElement("div");
         joinMsg.className = "chat-msg system";
         joinMsg.textContent = `‘${loginMemberName}’님이 입장했습니다`;
@@ -541,9 +566,7 @@ function enterChatroom(chatroomId, chatroomTitle) {
         messages.scrollTop = messages.scrollHeight;
     }
 
-    if (chatroomId) {
-        console.log("입장한 채팅방 ID:", chatroomId, "/ 제목:", chatroomTitle);
-    }
+    console.log("성공적으로 입장한 채팅방 ID:", chatroomId, "/ 제목:", chatroomTitle);
 }
 
 // ---- 취향/장르 선택 칩 (클릭 시 선택 표시 토글) ----
