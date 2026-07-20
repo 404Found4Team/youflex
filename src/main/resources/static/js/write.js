@@ -241,12 +241,12 @@ if(draftBtn){
 				alert('로그인이 필요한 기능입니다.');
 				return;
 			}
-			if(reponse.ok){
+			if(response.ok){
 				// 저장 성공 시 현재 시각 표시 (예 : 15:08)
-				const now = new Data();	/*모르는 부분*/
+				const now = new Date();	/*모르는 부분*/
 				const hh = String(now.getHours()).padStart(2, '0');	/*모르는 부분*/
-				const mm = String(no.getMinutes()).padstart(2, '0');
-				const TimeStr = `${hh}:${mm}`;
+				const mm = String(now.getMinutes()).padStart(2, '0');
+				const timeStr = `${hh}:${mm}`;
 				
 				const hint = document.getElementById('autosaveHint');
 				if(hint){
