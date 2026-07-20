@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.youflex.mapper.QuizMapper">
+
+    <select id="selectRandomQuiz" resultType="com.youflex.dto.QuizDTO">
+        SELECT *
+        FROM quiz
+        ORDER BY RAND()
+        LIMIT 1
+    </select>
+
+    <select id="findById" resultType="com.youflex.dto.QuizDTO">
+        SELECT *
+        FROM quiz
+        WHERE quiz_id = #{quizId}
+    </select>
+
+    <select id="countTodayAttempts" resultType="int">
+        SELECT COUNT(*)
+        FROM quiz_attempt
+        WHERE member_id = #{memberId}
+          AND quiz_attempt_date = CURDATE()
+    </select>
+
+    <!-- 문서에는 quiz_attempt_date를 트리거가 채워준다고 되어 있지만 실제 DB에는 그 트리거가 없어서
+         (quiz_attempt_date NOT NULL, DEFAULT 없음) 직접 오늘 날짜를 채워서 insert함 -->
+    <insert id="insertQuizAttempt" parameterType="com.youflex.dto.QuizAttemptDTO">
+        INSERT INTO quiz_attempt (quiz_id, member_id, quiz_attempt_check, quiz_attempt_date)
+        VALUES (#{quizId}, #{memberId}, #{quizAttemptCheck}, CURDATE())
+    </insert>
+
+</mapper>
