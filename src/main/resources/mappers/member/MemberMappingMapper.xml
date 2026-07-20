@@ -3,8 +3,8 @@
     PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<!-- DB 테이블명은 member_mapping이지만 자바 인터페이스/DTO명은 PreferenceMappingMapper로 남아있음(취향 매핑이라는 의미상 이름). 헷갈리지 않도록 남겨둠. -->
-<mapper namespace="com.youflex.mapper.PreferenceMappingMapper">
+<!-- DB 테이블명은 member_mapping이지만 자바 인터페이스/DTO명은 MemberMappingMapper로 남아있음(취향 매핑이라는 의미상 이름). 헷갈리지 않도록 남겨둠. -->
+<mapper namespace="com.youflex.mapper.MemberMappingMapper">
 
     <insert id="insertPreferences">
         INSERT INTO member_mapping (member_id, genre_category_id)
