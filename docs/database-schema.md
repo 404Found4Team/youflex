@@ -29,12 +29,10 @@
 ## 전체 DDL (원본 그대로)
 
 ```sql
--- =========================================================
--- YouFlex - OTT 리뷰 서비스 DB
--- =========================================================
-
 create database youflex;
 use youflex;
+
+-- drop database youflex;
 
 -- ---------------------------------------------------------
 -- 1. 회원 도메인
@@ -53,9 +51,9 @@ create table member (
     member_point         int not null default 0,
     member_delete_status enum('정상','탈퇴') not null default '정상',
     member_created_at    datetime not null default now(),
-    member_deleted_at    datetime null,
+    member_deleted_at    datetime null,      -- [수정1] 탈퇴 통계 대시보드용 탈퇴일시
     member_profile_img   varchar(500) null,
-    member_grade_status  enum('미신청','신청','승인','반려') not null default '미신청',
+    member_grade_status  enum('미신청','신청','승인','반려') not null default '미신청', -- [수정] 승인/반려 이력 구분
     constraint pk_member primary key (member_id),
     constraint uk_member_loginid unique (member_loginid),
     constraint uk_member_email unique (member_email)
@@ -81,6 +79,7 @@ create table genre_category (
     constraint pk_genre_category primary key (genre_category_id)
 );
 
+
 -- 4
 -- 카테고리 다대다 매핑 --
 create table preference_mapping (
@@ -90,26 +89,8 @@ create table preference_mapping (
     constraint pk_preference_mapping primary key (preference_mapping_id),
     constraint fk_preference_member foreign key (member_id) references member(member_id) on delete cascade,
     constraint fk_preference_category foreign key (genre_category_id) references genre_category(genre_category_id),
-    constraint uq_preference_mapping unique (member_id, genre_category_id)
+    constraint uq_preference_mapping unique (member_id, genre_category_id) -- [수정] 취향 중복등록 방지
 );
-
--- 회원당 취향 장르 최대 3개까지만 등록 가능하도록 제한하는 트리거
-delimiter $$
-create trigger trg_preference_mapping_limit
-before insert on preference_mapping
-for each row
-begin
-    declare cnt int;
-    select count(*) into cnt
-    from preference_mapping
-    where member_id = new.member_id;
-
-    if cnt >= 3 then
-        signal sqlstate '45000'
-        set message_text = '취향 장르는 최대 3개까지만 선택할 수 있습니다.';
-    end if;
-end$$
-delimiter ;
 
 -- ---------------------------------------------------------
 -- 2. 게시판 도메인
@@ -120,7 +101,7 @@ delimiter ;
 create table review (
     review_id                    int auto_increment,
     member_id                    int not null,
-    genre_category_id            int not null,
+    -- genre_category_id            int not null,
     review_platform              varchar(50) not null,
     review_related               varchar(50),
     review_title                 varchar(200) not null,
@@ -129,13 +110,22 @@ create table review (
     review_hit                   int not null default 0,
     review_rating                decimal(2, 1),
     review_highlighted           enum('N','Y') not null default 'N',
-    review_highlight_started_at  datetime null,
-    review_highlight_expired_at  datetime null,
+    review_highlight_started_at  datetime null, -- [수정4] 하이라이트 시작 시각
+    review_highlight_expired_at  datetime null, -- [수정4] 하이라이트 만료 시각(자동해제 배치용)
     review_created_at            datetime not null default now(),
-    review_updated_at            datetime not null,
+    review_updated_at            datetime null, -- null 허용으로 변경(2026.7.15(수) 오전)
     constraint pk_review primary key (review_id),
-    constraint fk_review_member foreign key (member_id) references member(member_id) on delete cascade,
-    constraint fk_review_category foreign key (genre_category_id) references genre_category(genre_category_id)
+    constraint fk_review_member foreign key (member_id) references member(member_id) on delete cascade
+    -- constraint fk_review_category foreign key (genre_category_id) references genre_category(genre_category_id)
+);
+
+-- 5.2 다중 장르 매핑 테이블 생성
+CREATE TABLE review_genre_mapping (
+    review_id INT NOT NULL,
+    genre_category_id INT NOT NULL,
+    PRIMARY KEY (review_id, genre_category_id),
+    CONSTRAINT fk_mapping_review FOREIGN KEY (review_id) REFERENCES REVIEW (review_id) ON DELETE CASCADE,
+    CONSTRAINT fk_mapping_genre FOREIGN KEY (genre_category_id) REFERENCES genre_category (genre_category_id)
 );
 
 -- 6
@@ -158,7 +148,7 @@ create table review_like (
     review_like_id          int auto_increment,
     review_id                int not null,
     member_id                int not null,
-    review_like_created_at   datetime not null default now(),
+    review_like_created_at   datetime not null default now(), -- [수정] 좋아요 포인트 적립 로그/한도 체크용
     constraint pk_review_like primary key (review_like_id),
     constraint fk_reviewlike_review foreign key (review_id) references review(review_id) on delete cascade,
     constraint fk_reviewlike_member foreign key (member_id) references member(member_id) on delete cascade,
@@ -203,11 +193,11 @@ create table comment (
     comment_id             int auto_increment,
     member_id               int not null,
     review_id                int not null,
-    parent_id                int null,
+    parent_id                int null, -- 자기참조 (대댓글)
     comment_content          text not null,
-    comment_delete_status    enum('정상','삭제') not null default '정상',
+    comment_delete_status    enum('정상','삭제') not null default '정상', -- [수정2] 소프트삭제 (대댓글 보존)
     comment_created_at       datetime not null default now(),
-    comment_updated_at       datetime not null,
+    comment_updated_at       datetime not null default now(),
     constraint pk_comment primary key (comment_id),
     constraint fk_comment_review foreign key (review_id) references review(review_id) on delete cascade,
     constraint fk_comment_member foreign key (member_id) references member(member_id) on delete cascade,
@@ -251,7 +241,7 @@ create table chatroom (
     chatroom_id           int auto_increment,
     member_id              int not null, -- 방장
     chatroom_title          varchar(100) not null,
-    chatroom_max_member     int not null default 30,
+    chatroom_max_member     int not null default 30, -- [수정1] 기획서 고정값 30명으로 통일
     chatroom_created_at     datetime not null default now(),
     constraint pk_chatroom primary key (chatroom_id),
     constraint fk_chatroom_member foreign key (member_id) references member(member_id) on delete cascade
@@ -264,7 +254,7 @@ create table chat_member (
     member_id              int not null,
     chatroom_id             int not null,
     chat_member_role        enum('방장','참여자') not null default '참여자',
-    chat_member_status      enum('참여중','퇴장','강퇴') not null default '참여중',
+    chat_member_status      enum('참여중','퇴장','강퇴') not null default '참여중', -- [수정3] 강퇴/자진퇴장 구분
     constraint pk_chat_member primary key (chat_member_id),
     constraint fk_chatmember_member foreign key (member_id) references member(member_id) on delete cascade,
     constraint fk_chatmember_chatroom foreign key (chatroom_id) references chatroom(chatroom_id) on delete cascade,
@@ -327,26 +317,16 @@ CREATE TABLE quiz_attempt (
     quiz_attempt_id             INT AUTO_INCREMENT,
     quiz_id                     INT NOT NULL,
     member_id                   INT NOT NULL,
-    quiz_attempt_check          INT NOT NULL,
+    quiz_attempt_check          INT NOT NULL, -- 정답 여부 (0/1)
     quiz_attempt_attempted_at   DATETIME NOT NULL DEFAULT NOW(),
-    quiz_attempt_date           DATE NOT NULL,
-
+    quiz_attempt_date           DATE NOT NULL, -- 매일 제한 체크용
+    
     CONSTRAINT pk_quiz_attempt PRIMARY KEY (quiz_attempt_id),
-    CONSTRAINT fk_quizattempt_quiz
+    CONSTRAINT fk_quizattempt_quiz 
         FOREIGN KEY (quiz_id) REFERENCES quiz(quiz_id) ON DELETE CASCADE,
-    CONSTRAINT fk_quizattempt_member
+    CONSTRAINT fk_quizattempt_member 
         FOREIGN KEY (member_id) REFERENCES member(member_id) ON DELETE CASCADE
-);
-CREATE INDEX idx_member_date ON quiz_attempt (member_id, quiz_attempt_date);
-
-DELIMITER $$
-CREATE TRIGGER trg_quiz_attempt_date
-BEFORE INSERT ON quiz_attempt
-FOR EACH ROW
-BEGIN
-    SET NEW.quiz_attempt_date = DATE(NEW.quiz_attempt_attempted_at);
-END$$
-DELIMITER ;
+a);
 
 -- ---------------------------------------------------------
 -- 6. 운영/관리 도메인
@@ -358,7 +338,7 @@ create table warning (
     warning_id           int auto_increment,
     member_id              int not null,
     warning_reason          varchar(200) not null,
-    warning_status          enum('유효','포인트차감취소') not null default '유효',
+    warning_status          enum('유효','포인트차감취소') not null default '유효', -- [수정] 포인트로 차감된 경고 구분
     warning_created_at      datetime not null default now(),
     constraint pk_warning primary key (warning_id),
     constraint fk_warning_member foreign key (member_id) references member(member_id) on delete cascade
@@ -371,9 +351,9 @@ create table point_history (
     member_id                    int not null,
     point_history_amount         int not null,
     point_history_type           enum('적립','사용','만료') not null,
-    point_history_reason         varchar(100) not null,
+    point_history_reason         varchar(100) not null, -- [수정] 좋아요/퀴즈/경고차감/하이라이트 등 사유 구분
     point_history_created_at     datetime not null default now(),
-    point_history_updated_at     datetime not null,
+    point_history_updated_at     datetime not null default now(),
     constraint pk_point_history primary key (point_history_id),
     constraint fk_pointhistory_member foreign key (member_id) references member(member_id) on delete cascade
 );
@@ -393,10 +373,13 @@ create table notice (
     notice_title          varchar(200) not null,
     notice_content        text not null,
     notice_hit            int not null default 0,
-    notice_created_at     datetime not null,
-    notice_updated_at     datetime not null,
+    notice_created_at     datetime not null default now(),
+    notice_updated_at     datetime not null default now(),
     constraint pk_notice primary key (notice_id)
 );
+
+
+
 
 -- 23
 -- 질문 게시판 --
@@ -406,10 +389,10 @@ create table qna (
     qna_title            varchar(200) not null,
     qna_content          text not null,
     qna_hit              int not null default 0,
-    qna_created_at       datetime not null,
-    qna_updated_at       datetime not null,
-    qna_status           enum('답변대기','답변완료') not null default '답변대기',
-    qna_is_secret        enum('공개','비밀') not null default '공개',
+    qna_created_at       datetime not null default now(),
+    qna_updated_at       datetime not null default now(),
+    qna_status           enum('답변대기','답변완료') not null default '답변대기', -- [수정] int → enum 명확화
+    qna_is_secret        enum('공개','비밀') not null default '공개', -- [수정] varchar → enum 명확화
     constraint pk_qna primary key (qna_id),
     constraint fk_qna_member foreign key (member_id) references member(member_id) on delete cascade
 );
@@ -436,8 +419,8 @@ create table qna_comment (
     qna_id                     int not null,
     member_id                  int not null,
     qna_comment_content         text not null,
-    qna_comment_created_at      datetime not null,
-    qna_comment_updated_at      datetime not null,
+    qna_comment_created_at      datetime not null default now(),
+    qna_comment_updated_at      datetime not null default now(),
     constraint pk_qna_comment primary key (qna_comment_id),
     constraint fk_qna_comment_qna foreign key (qna_id) references qna(qna_id) on delete cascade,
     constraint fk_qnacomment_member foreign key (member_id) references member(member_id) on delete cascade
@@ -449,8 +432,8 @@ create table admin_answer (
     admin_answer_id           int auto_increment,
     qna_id                      int not null,
     admin_answer_content         text not null,
-    admin_answer_created_at      datetime not null,
-    admin_answer_updated_at      datetime not null,
+    admin_answer_created_at      datetime not null default now(),
+    admin_answer_updated_at      datetime not null default now(),
     constraint pk_admin_answer primary key (admin_answer_id),
     constraint fk_adminanswer_qna foreign key (qna_id) references qna(qna_id) on delete cascade
 );
@@ -485,16 +468,15 @@ create table banner (
 -- ---------------------------------------------------------
 
 -- 29
--- 알림 테이블 --
+-- 알림 테이블 -- [수정5] 내용/이동경로/읽음상태 컬럼 보강
 create table notifications (
     notifications_id            int auto_increment,
     member_id                     int not null,
-    notifications_type            varchar(50) not null,
+    notifications_type            varchar(50) not null,   -- '댓글', '대댓글', '좋아요', '경고', 'QNA답변' 등
     notifications_content         varchar(200) not null,
-    notifications_target_type     varchar(20) null,
+    notifications_target_type     varchar(20) null,        -- 'review', 'comment', 'qna', 'admin_notice', 'warning' 등
     notifications_read_status     enum('안읽음','읽음') not null default '안읽음',
     notifications_created_at      datetime not null default now(),
     constraint pk_notifications primary key (notifications_id),
     constraint fk_notifications foreign key (member_id) references member(member_id) on delete cascade
 );
-```
