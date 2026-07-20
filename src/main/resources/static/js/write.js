@@ -213,6 +213,7 @@ if (imgInput && imgPreview) {
   });
 }
 
+/* ====== 게시글 임시저장 ======*/
 const draftBtn = document.getElementById('draftBtn');
 
 if(draftBtn){
