@@ -15,7 +15,7 @@
 			review_draft_content,
 			review_draft_saved_at
 		) VALUES(
-			#{memberid},
+			#{memberId},
 			#{reviewDraftTitle},
 			#{reviewDraftContent},
 			NOW()

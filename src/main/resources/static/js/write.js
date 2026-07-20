@@ -229,8 +229,41 @@ if(draftBtn){
 		}
 		
 		const formData = new FormData();	/*모르는 부분*/
+		formData.append('reviewDraftTitle', title);	/*데이터 추가 : append(key, value)*/
+		formData.append('reviewDraftContent', content);
 		
-	})
+		fetch('/review/draft/save', {	/* 브라우저 내장 비동기 http 요청 함수 */
+			method: 'POST',
+			body: formData
+		})
+		.then(response => {
+			if(response.status === 401){	/*모르는 부분*/
+				alert('로그인이 필요한 기능입니다.');
+				return;
+			}
+			if(reponse.ok){
+				// 저장 성공 시 현재 시각 표시 (예 : 15:08)
+				const now = new Data();	/*모르는 부분*/
+				const hh = String(now.getHours()).padStart(2, '0');	/*모르는 부분*/
+				const mm = String(no.getMinutes()).padstart(2, '0');
+				const TimeStr = `${hh}:${mm}`;
+				
+				const hint = document.getElementById('autosaveHint');
+				if(hint){
+					hint.textContent = `입시저장됨 (${timeStr})`;
+					hint.classList.add('saved');
+				}
+				
+				alert(`임시저장 되었습니다. (${timeStr})`);
+			}else{
+				alert('임시저장에 실패했습니다.');
+			}
+		})
+		.catch(error => {
+			console.error('Draft save error:', error);
+			alert('서버 통신 중 오류가 발생했습니다.');
+		});
+	});
 }
 
 // ===== [4] 로컬 스토리지 기반 임시저장 기능 =====
