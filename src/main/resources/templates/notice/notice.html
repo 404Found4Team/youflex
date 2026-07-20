@@ -51,7 +51,7 @@
 					<th class="meta">조회수</th>
 				</tr>
 			</thead>
-			<tbody>
+			<tbody id="noticeListBody">
 				<!-- 등록된 공지사항이 없을 경우 안내 문구 표시 -->
 				<tr th:if="${#lists.isEmpty(noticeList)}">
 					<td colspan="5" style="text-align:center;color:var(--text-2)">등록된 공지사항이 없습니다.</td>
@@ -62,8 +62,9 @@
 					<td class="num"><span class="badge" th:text="${noticeList.size() - stat.index}">1</span></td>
 					<td>
 						<!-- 제목 클릭 시 상세 페이지로 이동 -->
-						<a class="title-link" th:href="@{/notice/{id}(id=${notice.noticeId})}"
-							th:text="${notice.noticeTitle}">제목</a>
+						<a class="title-link" th:href="@{/notice/{id}(id=${notice.noticeId})}">
+							<span class="badge badge-admin" style="margin-right:6px">공지</span><span th:text="${notice.noticeTitle}">제목</span>
+						</a>
 					</td>
 					<!-- 작성자는 공지사항 특성상 항상 "관리자"로 고정 표기 (DB 값 미사용) -->
 					<td class="meta">관리자</td>
@@ -73,6 +74,7 @@
 				</tr>
 			</tbody>
 		</table>
+		<div class="pagination" id="noticePagination"></div>
 	</div>
 
 	<!-- Q&A: 여기는 아직 QnaService 없으니 자리만 유지, 추후 동일 패턴 적용 -->
@@ -93,7 +95,7 @@
 					<th class="meta">답변상태</th>
 				</tr>
 			</thead>
-			<tbody>
+			<tbody id="qnaListBody">
 			  <tr th:if="${#lists.isEmpty(qnaList)}">
 			    <td colspan="6" style="text-align:center;color:var(--text-2)">등록된 질문이 없습니다.</td>
 			  </tr>
@@ -117,6 +119,7 @@
 			  </tr>
 			</tbody>
 		</table>
+		<div class="pagination" id="qnaPagination"></div>
 	</div>
 	</main>
 

@@ -328,6 +328,35 @@ async function rejectWithdraw(btn) {
 }
 
 // ==========================================================================
+// 관리자 - 공지사항 등록 탭
+// ==========================================================================
+const NOTICE_API_BASE = "/api/notice";
+
+document.getElementById("noticeCreateBtn").addEventListener("click", async () => {
+  const titleInput = document.getElementById("notice_title");
+  const contentInput = document.getElementById("notice_content");
+  const title = titleInput.value.trim();
+  const content = contentInput.value.trim();
+  if (!title) {
+    alert("제목을 입력해주세요.");
+    return;
+  }
+  if (!content) {
+    alert("내용을 입력해주세요.");
+    return;
+  }
+  try {
+    await adminFetch(NOTICE_API_BASE, {
+      method: "POST",
+      body: JSON.stringify({ noticeTitle: title, noticeContent: content }),
+    });
+    location.href = "/notice";
+  } catch (e) {
+    alert(e.message);
+  }
+});
+
+// ==========================================================================
 // 관리자 - 신고 처리 탭
 // ==========================================================================
 const REPORT_API_BASE = "/api/admin/reports";
