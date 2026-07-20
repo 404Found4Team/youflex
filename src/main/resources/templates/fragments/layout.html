@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>YouFlex</title>
+
 </head>
 <body>
 	
@@ -199,8 +200,31 @@
   <div class="panel-body" data-tab-panel="chat" style="display:none;padding:0">
     <div class="chatroom-title">
       <span id="chatroomTitleText">💬 </span>
-      <button class="btn btn-sm btn-danger" onclick="giveChatWarning()"
-              th:if="${session.loginMember != null and (session.loginMember.memberGrade == '평론가' or session.loginMember.memberGrade == '관리자')}">⚠ 경고 부여</button>
+
+      <div class="chatroom-title-actions">
+        <button class="btn btn-sm btn-danger" onclick="giveChatWarning()"
+                th:if="${session.loginMember != null and (session.loginMember.memberGrade == '평론가' or session.loginMember.memberGrade == '관리자')}">⚠ 경고 부여</button>
+
+        <!-- 케밥 메뉴 버튼 -->
+        <button class="chatroom-menu-btn" id="chatroomMenuBtn" title="더보기">⋮</button>
+
+        <!-- 드롭다운 메뉴 -->
+        <div class="chatroom-dropdown" id="chatroomDropdown">
+          <div class="chatroom-dropdown-item toggle-item">
+            <span><span class="icon">🔔</span> 알림</span>
+            <label class="switch">
+              <input type="checkbox" id="chatroomNotifyToggle" checked />
+              <span class="slider round"></span>
+            </label>
+          </div>
+
+          <div class="chatroom-dropdown-divider"></div>
+
+          <button class="chatroom-dropdown-item danger" id="chatroomLeaveBtn">
+            <span class="icon">🚪</span> 채팅방 나가기
+          </button>
+        </div>
+      </div>
     </div>
     <div class="chatroom-messages" id="chatroomMessages">
       <!-- 기존에 고정되어 있던 하드코딩 입장 메시지 제거 완료 -->
@@ -222,5 +246,7 @@
     <button class="btn btn-primary mt-24" id="chatroomCreateBtn" style="width:100%">채팅방 개설</button>
   </div>
 </aside>
+
+
 </body>   
 </html>
