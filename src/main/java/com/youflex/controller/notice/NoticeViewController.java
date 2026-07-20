@@ -8,10 +8,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import com.youflex.dto.MemberDTO;
 import com.youflex.dto.notice.NoticeDTO;
 import com.youflex.service.notice.NoticeService;
 import com.youflex.service.qna.QnaService;
 
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -55,5 +57,26 @@ public class NoticeViewController {
         NoticeDTO notice = noticeService.getNoticeDetail(noticeId);
         model.addAttribute("notice", notice); // 상세 데이터를 뷰로 전달
         return "notice/notice_detail";
+    }
+
+    // 공지사항 수정 화면
+    /**
+     * 공지사항 수정 폼 렌더링
+     * - memberGrade가 '관리자'가 아니면 상세 페이지로 리다이렉트
+     * @param noticeId 수정할 공지사항 ID
+     * @param model 뷰에 전달할 데이터를 담는 모델 객체
+     * @param session 로그인 세션 (관리자 여부 확인용)
+     * @return 공지사항 수정 폼 뷰 이름 (notice/notice_update), 관리자가 아니면 상세 페이지로 리다이렉트
+     */
+    @GetMapping("/{noticeId}/update")
+    public String noticeUpdateForm(@PathVariable("noticeId") int noticeId, Model model, HttpSession session) {
+        Object loginMemberObj = session.getAttribute("loginMember");
+        if (!(loginMemberObj instanceof MemberDTO loginMember) || !"관리자".equals(loginMember.getMemberGrade())) {
+            return "redirect:/notice/" + noticeId;
+        }
+
+        NoticeDTO notice = noticeService.getNoticeDetail(noticeId);
+        model.addAttribute("notice", notice);
+        return "notice/notice_update";
     }
 }
