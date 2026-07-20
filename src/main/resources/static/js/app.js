@@ -227,16 +227,6 @@ function initQnaChatbotQuiz() {
         .catch(() => {});
 }
 
-// ---- 방장(평론가) 퇴장 시 채팅방 삭제 경고 (확인창 -> 확인 누르면 삭제 알림) ----
-function confirmRoomLeave() {
-    const ok = confirm(
-        "방장이 퇴장하면 채팅방이 삭제되고 대화 내용이 모두 사라집니다.\n정말 퇴장하시겠습니까?"
-    );
-    if (ok) {
-        alert("채팅방이 삭제되었습니다. (데모)");
-    }
-}
-
 // ---- 채팅방: 방장(평론가/관리자)이 채팅 내에서 특정 사용자에게 경고를 부여 ----
 function giveChatWarning() {
     const name = prompt("경고를 부여할 사용자의 닉네임을 입력하세요.");
@@ -526,7 +516,6 @@ async function enterChatroom(chatroomId, chatroomTitle) {
     currentChatroomId = chatroomId;
 
     // ★ 목록 화면의 "입장" 버튼이 "참여중"으로 바뀌도록, 목록도 최신 상태로 다시 받아온다
-    //   (지금 당장 화면엔 [채팅] 탭이 보이지만, 나중에 [목록] 탭으로 돌아갔을 때 반영되어 있어야 함)
     loadChatroomList();
 
     // 2. 채팅방 패널 안의 [채팅] 탭 버튼을 찾아 자동으로 클릭(화면 전환)
@@ -553,8 +542,6 @@ async function enterChatroom(chatroomId, chatroomTitle) {
         messages.appendChild(joinMsg);
         messages.scrollTop = messages.scrollHeight;
     }
-
-    console.log("성공적으로 입장한 채팅방 ID:", chatroomId, "/ 제목:", chatroomTitle);
 }
 
 /**
@@ -605,8 +592,7 @@ async function leaveChatroom() {
 }
 
 /**
- * 채팅방 상단 케밥(⋮) 메뉴: 알림 토글 / 나가기 버튼 초기화
- * initChatroomChat()과 마찬가지로 DOMContentLoaded 안에서 한 번만 호출된다.
+ * 채팅방 상단 케밥(⋮) 메뉴 및 알림 토글 / 나가기 버튼 초기화
  */
 function initChatroomMenu() {
     const chatroomMenuBtn = document.getElementById('chatroomMenuBtn');
@@ -626,11 +612,6 @@ function initChatroomMenu() {
                 chatroomDropdown.classList.remove('open');
             }
         });
-        // 드롭다운 안 토글 스위치를 눌러도 메뉴가 닫히지 않도록
-        const toggleItem = chatroomDropdown.querySelector('.toggle-item');
-        if (toggleItem) {
-            toggleItem.addEventListener('click', (e) => e.stopPropagation());
-        }
     }
 
     // 알림 켜기/끄기
@@ -644,71 +625,15 @@ function initChatroomMenu() {
         });
     }
 
-    // 채팅방 나가기
+    // 채팅방 나가기 버튼
     if (chatroomLeaveBtn) {
         chatroomLeaveBtn.addEventListener('click', () => {
             if (chatroomDropdown) chatroomDropdown.classList.remove('open');
             leaveChatroom();
         });
     }
-
-    console.log("성공적으로 입장한 채팅방 ID:", chatroomId, "/ 제목:", chatroomTitle);
-}
-// 케밥 메뉴 열기/닫기
-const chatroomMenuBtn = document.getElementById('chatroomMenuBtn');
-const chatroomDropdown = document.getElementById('chatroomDropdown');
-if (chatroomMenuBtn && chatroomDropdown) {
-  chatroomMenuBtn.addEventListener('click', function (e) {
-    e.stopPropagation();
-    chatroomDropdown.classList.toggle('open');
-  });
-  // 메뉴 바깥 클릭 시 닫기
-  document.addEventListener('click', function (e) {
-    if (!chatroomDropdown.contains(e.target) && e.target !== chatroomMenuBtn) {
-      chatroomDropdown.classList.remove('open');
-    }
-  });
-  // 메뉴 안 토글 스위치 클릭 시엔 메뉴가 안 닫히도록
-  chatroomDropdown.querySelector('.toggle-item').addEventListener('click', function (e) {
-    e.stopPropagation();
-  });
 }
 
-// 알림 켜기/끄기
-const chatroomNotifyToggle = document.getElementById('chatroomNotifyToggle');
-if (chatroomNotifyToggle) {
-  chatroomNotifyToggle.addEventListener('change', function () {
-    const isOn = this.checked;
-    fetch('/chatroom/notify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ notifyOn: isOn })
-    }).catch(err => console.error('알림 설정 저장 실패:', err));
-  });
-}
-
-// 채팅방 나가기 버튼
-const chatroomLeaveBtn = document.getElementById('chatroomLeaveBtn');
-if (chatroomLeaveBtn) {
-  chatroomLeaveBtn.addEventListener('click', function () {
-    if (chatroomDropdown) chatroomDropdown.classList.remove('open');
-    if (!confirm('채팅방에서 나가시겠습니까?')) return;
-
-    // 입장 시 저장해둔 현재 방 ID 사용 (예: chatroomPanel.dataset.currentRoomId)
-    const roomId = document.getElementById('chatroomPanel').dataset.currentRoomId;
-
-    fetch(`/chatroom/${roomId}/leave`, { method: 'POST' })
-      .then(res => {
-        if (res.ok) {
-          alert('채팅방에서 나갔습니다.');
-          document.querySelector('[data-tab-target="list"]').click(); // 목록 탭으로 이동
-        } else {
-          alert('나가기에 실패했습니다.');
-        }
-      })
-      .catch(err => console.error('나가기 요청 실패:', err));
-  });
-}
 // ---- 취향/장르 선택 칩 (클릭 시 선택 표시 토글) ----
 function initGenreChips() {
     document.querySelectorAll(".genre-chip").forEach((chip) => {
@@ -812,9 +737,8 @@ document.addEventListener("DOMContentLoaded", () => {
     initTabs(".platform-tabs");
     initTabs(".notice-tabs");
 
-
     initChatroomChat();
-    initChatroomMenu();   // ★ 케밥 메뉴(알림 토글 / 나가기) 초기화 추가
+    initChatroomMenu();   // 케밥 메뉴 및 나가기 기능 초기화
     initGenreChips();
     initQnaChatbotQuiz();
 });
@@ -827,10 +751,6 @@ const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
             void entry.target.offsetWidth;
-
-
-
-
             entry.target.style.animation = 'heading-shine 4s ease-in-out infinite, heading-fade-in 0.6s ease-out';
         }
     });
@@ -839,6 +759,9 @@ const observer = new IntersectionObserver((entries) => {
 headings.forEach(h => observer.observe(h));
 
 // ---- 푸터: 맨 위로 가기 버튼 ----
-document.getElementById("footerTopBtn").addEventListener("click", function() {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-});
+const footerTopBtn = document.getElementById("footerTopBtn");
+if (footerTopBtn) {
+    footerTopBtn.addEventListener("click", function() {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+}
