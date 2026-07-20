@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>YouFlex - 공지사항 수정</title>
+<link rel="stylesheet" th:href="@{/css/common.css}" />
+<link rel="stylesheet" th:href="@{/css/notice_update.css}" />
+</head>
+<!-- data-nav-current: 상단 네비게이션에서 현재 활성화된 메뉴(notice)를 표시하기 위한 속성 -->
+<body data-nav-current="notice">
+
+	<!--
+	==================================
+	  공통 헤더바
+	==================================
+	-->
+	<header th:replace="~{fragments/layout :: header}"></header>
+
+	<!--
+	==================================
+	 공통 네비게이션 바
+	==================================
+	-->
+	<nav class="category-nav" th:replace="~{fragments/layout :: nav}"></nav>
+
+<main class="container">
+  <div class="notice-detail-wrap">
+    <h1 class="notice-detail-title">공지사항 수정</h1>
+
+    <!-- 공지사항 수정 폼: data-notice-id로 어느 공지를 수정하는지 JS에서 참조 -->
+    <form id="noticeUpdateForm" th:attr="data-notice-id=${notice.noticeId}">
+      <div class="form-row">
+        <label>제목</label>
+        <input type="text" id="notice_title" name="notice_title" th:value="${notice.noticeTitle}" />
+      </div>
+      <div class="form-row">
+        <label>내용</label>
+        <textarea id="notice_content" name="notice_content" th:text="${notice.noticeContent}"></textarea>
+      </div>
+      <div class="edit-toolbar">
+        <a th:href="@{/notice/{id}(id=${notice.noticeId})}" class="btn">취소</a>
+        <button type="button" class="btn btn-primary" id="noticeSaveBtn">수정 완료</button>
+      </div>
+    </form>
+  </div>
+</main>
+
+<!-- 알림 슬라이드 패널: 내용은 app.js가 /api/notifications 호출로 채움 -->
+<div class="overlay-backdrop" id="notificationBackdrop"></div>
+<aside class="slide-panel" id="notificationPanel">
+  <div class="panel-header"><h3>🔔 알림</h3><button class="panel-close" id="notificationClose">✕</button></div>
+  <div class="panel-body" id="notificationBody"></div>
+</aside>
+
+<!-- 챗봇 실행 플로팅 버튼(FAB) 및 챗봇 패널 -->
+<button class="fab" id="chatbotFab" title="챗봇 실행">🤖</button>
+<div class="overlay-backdrop" id="chatbotBackdrop"></div>
+<aside class="slide-panel" id="chatbotPanel">
+  <div class="panel-header"><h3>🤖 YouFlex 챗봇</h3><button class="panel-close" id="chatbotClose">✕</button></div>
+  <div class="panel-body">
+    <div class="chat-msg"><div class="avatar"></div><div class="bubble">무엇을 도와드릴까요?</div></div>
+  </div>
+  <div class="panel-input-row"><input type="text" placeholder="질문을 입력하세요" /><button class="btn btn-primary">전송</button></div>
+</aside>
+
+<!-- 커뮤니티 채팅 패널: 목록/채팅/개설 탭 구성 -->
+<div class="overlay-backdrop" id="chatroomBackdrop"></div>
+<aside class="slide-panel" id="chatroomPanel">
+  <div class="panel-header"><h3>💬 커뮤니티 채팅</h3><button class="panel-close" id="chatroomClose">✕</button></div>
+  <div class="panel-tabs" data-tab-panels>
+    <button class="active" data-tab-target="list">목록</button>
+    <button data-tab-target="chat">채팅</button>
+    <button data-tab-target="create" data-role-visible="critic,admin">개설</button>
+  </div>
+  <div class="panel-body" data-tab-panel="list"></div>
+  <div class="panel-body" data-tab-panel="chat" style="display:none;padding:0"></div>
+  <div class="panel-body" data-tab-panel="create" style="display:none"></div>
+</aside>
+
+<!-- 공통 푸터 -->
+<footer class="site-footer main-footer" th:replace="~{fragments/layout :: footer}"></footer>
+
+<script th:src="@{/js/app.js}"></script>
+<script th:src="@{/js/notice_update.js}"></script>
+</body>
+</html>
