@@ -812,8 +812,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initTabs(".platform-tabs");
     initTabs(".notice-tabs");
 
-    initQuiz();
-    initQuizStart();
+
     initChatroomChat();
     initChatroomMenu();   // ★ 케밥 메뉴(알림 토글 / 나가기) 초기화 추가
     initGenreChips();
@@ -828,6 +827,10 @@ const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
             void entry.target.offsetWidth;
+
+
+
+
             entry.target.style.animation = 'heading-shine 4s ease-in-out infinite, heading-fade-in 0.6s ease-out';
         }
     });
