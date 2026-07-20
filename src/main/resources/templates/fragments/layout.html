@@ -204,7 +204,13 @@
               th:if="${session.loginMember != null and (session.loginMember.memberGrade == '평론가' or session.loginMember.memberGrade == '관리자')}">⚠ 경고 부여</button>
     </div>
     <div class="chatroom-messages" id="chatroomMessages">
-      <div class="chat-msg system">‘영화광123’님이 입장했습니다</div>
+		<!-- 수정 전 -->
+		<!-- <div class="chat-msg system">‘영화광123’님이 입장했습니다</div> -->
+
+		<!-- 수정 후 (세션의 로그인 회원 정보를 타임리프로 바인딩) -->
+		<div class="chat-msg system">
+		    ‘<span th:text="${session.loginMember != null ? session.loginMember.memberName : '손님'}"></span>’님이 입장했습니다
+		</div>
       <div class="chat-msg"><div class="avatar"></div><div class="bubble">다들 이번 편 결말 어떻게 보셨어요?</div></div>
       <div class="chat-msg me"><div class="avatar"></div><div class="bubble">저는 반전이 좋았어요 ㅋㅋ</div></div>
     </div>
