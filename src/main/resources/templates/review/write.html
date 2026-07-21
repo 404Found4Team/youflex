@@ -84,19 +84,17 @@
       ==================================
     -->
 				<form id="reviewForm" th:action="@{/review/write}" method="post" enctype="multipart/form-data">
-					<!--<div class="row-2">-->
+					<!--임시저장 ID를 저장할 hidden input (기본값 0)-->
+					<input type="hidden" id="review_draft_id" name="reviewDraftId" value="0">
 						<div class="form-row">
 							<label>플랫폼</label>
 							<select id="review_platform" name="reviewPlatform">
 								<option>넷플릭스</option>
 								<option>티빙</option>
 								<option>디즈니+</option>
-								<option>웨이브</option>
-								<option>쿠팡플레이</option>
 								<option>기타</option>
 							</select>
 						</div>
-					<!--</div>-->
 
 					<!-- 제목 작성 영역 -->
 					<div class="form-row">

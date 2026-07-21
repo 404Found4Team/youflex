@@ -33,10 +33,16 @@ public class ReviewDraftController {
 		draftDTO.setMemberId(memberId);
 		
 		// 현재 임시저장 개수 확인(5개 제한)
-		int count = draftService.countDraftByMemberId(memberId);
-		if(count >= 5) {
-			return ResponseEntity.ok("MAX_LIMIT_EXCEEDED");
+		if(draftDTO.getReviewDraftId()<=0) {
+			int count = draftService.countDraftByMemberId(memberId);
+			if(count >= 5) {
+				return ResponseEntity.ok("MAX_LIMIT_EXCEEDED");
+			}
 		}
+		
+		draftService.saveDraft(draftDTO);
+		
+		
 		
 		// 들어오는 데이터 검증용 로그(콘솔에서 확인해보세요)
 		System.out.println("=== 임시저장 요청 데이터 ===");
