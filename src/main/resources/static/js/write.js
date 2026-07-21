@@ -229,9 +229,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const titleInput = document.getElementById('review_title');
       const contentInput = document.getElementById('review_content');
       const ratingVal = ratingInput ? ratingInput.value : 0;
+	  const reviewRelatedInput = document.getElementById('review_related');
       
       const title = titleInput ? titleInput.value.trim() : '';
       const content = contentInput ? contentInput.value.trim() : '';
+	  const reviewRelated = reviewRelatedInput?reviewRelatedInput.value.trim() : '';
       
       if (!title && !content) {
         alert('제목이나 내용 중 하나 이상 입력 후 임시저장해 주세요.');
@@ -243,6 +245,8 @@ document.addEventListener('DOMContentLoaded', () => {
       formData.append('reviewDraftTitle', title);	/*데이터 추가 : append(key, value)*/
       formData.append('reviewDraftContent', content);
       formData.append('reviewRating', ratingVal); // 별점 전송
+	  formData.append('reviewDraftRelated', reviewRelated);
+	  console.log(formData);
 
       // 선택된 장르 ID 전송
       if (genreGrid) {

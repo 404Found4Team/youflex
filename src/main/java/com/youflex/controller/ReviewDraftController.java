@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.youflex.dto.MemberDTO;
@@ -23,17 +24,36 @@ public class ReviewDraftController {
 	private final ReviewDraftService draftService;
 	
 	// 1. 임시저장
+//	@PostMapping("/review/draft/save")
+//	public ResponseEntity<String> saveDraft(ReviewDraftDTO draftDTO, HttpSession session) {
+//		MemberDTO loginMember = (MemberDTO) session.getAttribute("loginMember");
+//		if (loginMember == null) {
+//			return ResponseEntity.status(401).body("UNAUTHORIZED");
+//		}
+//		
+//		draftDTO.setMemberId(loginMember.getMemberId());
+//		draftService.saveDraft(draftDTO);
+//		
+//		return ResponseEntity.ok("SUCCESS");
+//	}
 	@PostMapping("/review/draft/save")
-	public ResponseEntity<String> saveDraft(ReviewDraftDTO draftDTO, HttpSession session) {
-		MemberDTO loginMember = (MemberDTO) session.getAttribute("loginMember");
-		if (loginMember == null) {
+	public ResponseEntity<String> saveDraft(ReviewDraftDTO draftDTO, HttpSession session){
+		MemberDTO loginMember = (MemberDTO)session.getAttribute("loginMember");
+		if(loginMember == null) {
 			return ResponseEntity.status(401).body("UNAUTHORIZED");
 		}
+		// 로그인된 회원 ID 세팅
+		draftDTO.setMemberId((int)loginMember.getMemberId());
 		
-		draftDTO.setMemberId(loginMember.getMemberId());
-		draftService.saveDraft(draftDTO);
-		
-		return ResponseEntity.ok("SUCCESS");
+		// 들어오는 데이터 검증용 로그(콘솔에서 확인해보세요)
+		System.out.println("=== 임시저장 요청 데이터 ===");
+	    System.out.println("Title: " + draftDTO.getReviewDraftTitle());
+	    System.out.println("Content: " + draftDTO.getReviewDraftContent());
+	    System.out.println("Related: " + draftDTO.getReviewDraftRelated());
+	    
+	    draftService.saveDraft(draftDTO);
+	    
+	    return ResponseEntity.ok("SUCCESS");
 	}
 
 	// 2. 임시저장 목록 조회
