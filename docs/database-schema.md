@@ -45,6 +45,7 @@
   삭제해야 함). 이 변경 때문에 `ReviewReportMapper`/`QnaReportMapper`/`QnaCommentReportMapper`의
   원본 조회 JOIN도 전부 LEFT JOIN으로 바뀌었음(INNER JOIN이면 참조가 NULL인 순간 그 행 자체가 결과에서
   빠져버리기 때문). 로컬 DB 마이그레이션:
+
   ```sql
   ALTER TABLE review_report DROP FOREIGN KEY fk_reviewreport_review;
   ALTER TABLE review_report MODIFY review_id INT NULL;
@@ -353,11 +354,11 @@ CREATE TABLE quiz_attempt (
     quiz_attempt_check          INT NOT NULL, -- 정답 여부 (0/1)
     quiz_attempt_attempted_at   DATETIME NOT NULL DEFAULT NOW(),
     quiz_attempt_date           DATE NOT NULL, -- 매일 제한 체크용
-    
+
     CONSTRAINT pk_quiz_attempt PRIMARY KEY (quiz_attempt_id),
-    CONSTRAINT fk_quizattempt_quiz 
+    CONSTRAINT fk_quizattempt_quiz
         FOREIGN KEY (quiz_id) REFERENCES quiz(quiz_id) ON DELETE CASCADE,
-    CONSTRAINT fk_quizattempt_member 
+    CONSTRAINT fk_quizattempt_member
         FOREIGN KEY (member_id) REFERENCES member(member_id) ON DELETE CASCADE
 a);
 
@@ -526,3 +527,4 @@ create table notifications (
     constraint pk_notifications primary key (notifications_id),
     constraint fk_notifications foreign key (member_id) references member(member_id) on delete cascade
 );
+```

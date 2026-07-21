@@ -399,7 +399,19 @@ document.getElementById("noticeCreateBtn").addEventListener("click", async () =>
 // ==========================================================================
 const REPORT_API_BASE = "/api/admin/reports";
 
+<<<<<<< HEAD
 // 신고 처리(반려/경고처리/삭제)가 끝나면 미처리 탭에서는 사라지고, 새로고침하면 처리완료 탭에서 보임
+=======
+// 신고 1건을 처리 상태로 표시하고 반려/경고처리/삭제 버튼을 비활성화.
+// label/pillClass를 넘기지 않으면 반려/경고처리(콘텐츠는 그대로 유지)에 해당하는 기본값을 사용.
+function markReportRowResolved(row, label, pillClass) {
+  // 열 순서: No/대상/내용요약/작성자/신고자/사유/접수일/상태/액션 -> 상태는 7번 인덱스
+  const statusCell = row.children[7];
+  statusCell.innerHTML = `<span class="status-pill ${pillClass || "status-active"}">${label || "처리완료 (유지)"}</span>`;
+  row.querySelectorAll(".actions button").forEach((btn) => (btn.disabled = true));
+}
+
+>>>>>>> main
 async function rejectReport(btn) {
   const row = btn.closest("tr");
   if (!confirm("이 신고를 반려(콘텐츠 유지) 처리하시겠습니까?")) return;
@@ -434,6 +446,24 @@ async function purgeResolvedReport(btn) {
   try {
     await adminFetch(`${REPORT_API_BASE}/${row.dataset.reportType}/${row.dataset.reportId}/purge`, { method: "DELETE" });
     row.remove();
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+// 신고된 원본 콘텐츠(게시글/댓글/QNA/QNA댓글)를 실제로 삭제하고 신고를 처리완료 처리
+async function deleteReportedContent(btn) {
+  const row = btn.closest("tr");
+  if (!confirm("신고된 원본 콘텐츠를 삭제하시겠습니까? 되돌릴 수 없습니다.")) return;
+  try {
+    await adminFetch(`${REPORT_API_BASE}/${row.dataset.reportType}/${row.dataset.reportId}`, {
+      method: "DELETE",
+      body: JSON.stringify({ targetId: Number(row.dataset.targetId) }),
+    });
+    // 내용 요약 칸(3번째 열)은 이미 삭제된 원본 콘텐츠의 옛 텍스트라 그대로 두면 오해의 소지가 있어 갱신
+    row.children[2].textContent = "삭제된 콘텐츠입니다";
+    markReportRowResolved(row, "삭제완료", "status-blacklist");
+    alert("신고된 콘텐츠가 삭제되었습니다.");
   } catch (e) {
     alert(e.message);
   }

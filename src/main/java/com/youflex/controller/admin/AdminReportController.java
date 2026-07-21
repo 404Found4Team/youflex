@@ -33,8 +33,8 @@ public class AdminReportController {
     // 공통으로 호출 - 신고를 '처리완료'로 전환
     @PostMapping("/{reportType}/{reportId}/resolve")
     public ResponseEntity<?> resolve(@PathVariable("reportType") String reportType,
-                                      @PathVariable("reportId") int reportId,
-                                      HttpSession session) {
+            @PathVariable("reportId") int reportId,
+            HttpSession session) {
         if (!isAdmin(session)) {
             return forbidden();
         }
@@ -45,9 +45,9 @@ public class AdminReportController {
     // "삭제" 처리 - 신고된 원본 콘텐츠(게시글/댓글/QNA/QNA댓글)를 실제로 삭제하고 신고를 처리완료로 전환
     @DeleteMapping("/{reportType}/{reportId}")
     public ResponseEntity<?> deleteContent(@PathVariable("reportType") String reportType,
-                                            @PathVariable("reportId") int reportId,
-                                            @RequestBody DeleteRequest request,
-                                            HttpSession session) {
+            @PathVariable("reportId") int reportId,
+            @RequestBody DeleteRequest request,
+            HttpSession session) {
         if (!isAdmin(session)) {
             return forbidden();
         }
@@ -58,8 +58,8 @@ public class AdminReportController {
     // 처리완료 탭 - 신고 기록 자체를 완전 삭제(원본 콘텐츠는 이미 반려/삭제로 정리된 뒤라 여기선 건드리지 않음)
     @DeleteMapping("/{reportType}/{reportId}/purge")
     public ResponseEntity<?> purgeResolvedReport(@PathVariable("reportType") String reportType,
-                                                  @PathVariable("reportId") int reportId,
-                                                  HttpSession session) {
+            @PathVariable("reportId") int reportId,
+            HttpSession session) {
         if (!isAdmin(session)) {
             return forbidden();
         }
