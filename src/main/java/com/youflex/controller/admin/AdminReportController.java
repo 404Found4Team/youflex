@@ -55,6 +55,18 @@ public class AdminReportController {
         return ResponseEntity.ok().build();
     }
 
+    // 처리완료 탭 - 신고 기록 자체를 완전 삭제(원본 콘텐츠는 이미 반려/삭제로 정리된 뒤라 여기선 건드리지 않음)
+    @DeleteMapping("/{reportType}/{reportId}/purge")
+    public ResponseEntity<?> purgeResolvedReport(@PathVariable("reportType") String reportType,
+                                                  @PathVariable("reportId") int reportId,
+                                                  HttpSession session) {
+        if (!isAdmin(session)) {
+            return forbidden();
+        }
+        adminReportService.purgeResolvedReport(reportType, reportId);
+        return ResponseEntity.noContent().build();
+    }
+
     // 세션의 로그인 회원이 관리자 등급인지 확인 (memberGrade == '관리자')
     private boolean isAdmin(HttpSession session) {
         Object loginMemberObj = session.getAttribute("loginMember");

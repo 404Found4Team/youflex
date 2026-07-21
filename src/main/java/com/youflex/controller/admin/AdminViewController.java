@@ -46,11 +46,17 @@ public class AdminViewController {
         model.addAttribute("memberTotalCount", memberService.getMemberListTotalCount(""));
         model.addAttribute("memberPageSize", memberService.getMemberPageSize());
         model.addAttribute("gradeRequests", memberService.getGradeUpgradeRequests());
-        model.addAttribute("withdrawnMembers", memberService.getWithdrawnMembers());
+        List<MemberDTO> withdrawnMembers = memberService.getWithdrawnMembers();
+        model.addAttribute("withdrawnMembers", withdrawnMembers);
 
-        // 신고 처리 탭 - 검색/페이징이 없어 전체 목록을 SSR로 한 번에 내려줌
-        List<ReportDTO> reportList = adminReportService.getAllReports();
-        model.addAttribute("reportList", reportList);
+        // 신고 처리 탭 - 미처리/처리완료 서브탭으로 분리. 검색/페이징이 없어 전체를 SSR로 한 번에 내려줌
+        List<ReportDTO> allReports = adminReportService.getAllReports();
+        List<ReportDTO> pendingReports = allReports.stream()
+                .filter(r -> !"처리완료".equals(r.getStatus())).toList();
+        List<ReportDTO> resolvedReports = allReports.stream()
+                .filter(r -> "처리완료".equals(r.getStatus())).toList();
+        model.addAttribute("reportList", pendingReports);
+        model.addAttribute("resolvedReportList", resolvedReports);
 
         // Q&A 답변 탭 - 검색/페이징이 없어 전체 목록을 SSR로 한 번에 내려줌
         model.addAttribute("qnaList", qnaService.getQnaList());
@@ -58,13 +64,12 @@ public class AdminViewController {
         // 배너 설정 탭
         model.addAttribute("bannerList", bannerService.getBannerList());
 
-        // 상단 KPI 카드 - 오늘/이번주 가입·탈퇴 수치, 신고 접수(미처리)
+        // 상단 KPI 카드 - 오늘/이번주 가입자 수, 탈퇴 신청자 수, 누적 탈퇴자수, 신고 접수(미처리)
         model.addAttribute("todayJoinCount", adminStatsService.getTodayJoinCount());
         model.addAttribute("weekJoinCount", adminStatsService.getThisWeekJoinCount());
-        model.addAttribute("todayWithdrawCount", adminStatsService.getTodayWithdrawCount());
-        model.addAttribute("weekWithdrawCount", adminStatsService.getThisWeekWithdrawCount());
-        model.addAttribute("pendingReportCount",
-                reportList.stream().filter(r -> !"처리완료".equals(r.getStatus())).count());
+        model.addAttribute("pendingWithdrawCount", withdrawnMembers.size());
+        model.addAttribute("totalWithdrawnCount", adminStatsService.getTotalWithdrawnCount());
+        model.addAttribute("pendingReportCount", pendingReports.size());
 
         return "admin/admin";
     }
