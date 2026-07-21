@@ -27,10 +27,13 @@
 <main class="container">
   <div class="notice-detail-wrap">
 
-    <!-- 질문 제목 + 작성자 전용 액션 버튼 -->
+    <!-- 질문 제목 + 작성자 전용 액션 버튼 - 같은 줄에 배치(.notice-detail-title-row가 flex space-between) -->
     <div class="notice-detail-title-row">
-      <!-- 비밀글 배지: 이 페이지에 도달했다는 것 자체가 작성자 본인 또는 관리자라는 뜻이므로 별도 권한 체크 불필요 -->
-      <span class="badge" th:if="${qna.qnaIsSecret == '비밀'}" style="background:var(--danger);color:#fff;margin-right:8px">🔒 비공개</span>
+      <h1 class="notice-detail-title">
+        <!-- 비밀글 배지: 이 페이지에 도달했다는 것 자체가 작성자 본인 또는 관리자라는 뜻이므로 별도 권한 체크 불필요 -->
+        <span class="badge" th:if="${qna.qnaIsSecret == '비밀'}" style="background:var(--danger);color:#fff;margin-right:8px">🔒 비공개</span>
+        <span th:text="${qna.qnaTitle}">제목</span>
+      </h1>
       <!-- 작성자 본인에게만 노출. th:if로 세션의 loginMember.memberId와 게시글 작성자 memberId를 직접 비교 (Spring Security sec:authorize 미사용) -->
       <div class="owner-actions" th:if="${session.loginMember != null and session.loginMember.memberId == qna.memberId}"
            style="display:flex;gap:8px;flex-shrink:0">
@@ -40,7 +43,6 @@
                 th:onclick="|if(confirm('정말 삭제하시겠습니까?')) deleteQna(${qna.qnaId})|">삭제</button>
       </div>
     </div>
-    <h1 class="notice-detail-title" th:text="${qna.qnaTitle}">제목</h1>
 
     <!-- 질문 메타 정보: 작성자 / 등록일 / 조회수 -->
     <div class="notice-detail-meta">
@@ -169,23 +171,25 @@
   <div class="panel-body" id="notificationBody"></div>
 </aside>
 
-<!-- 챗봇 실행 플로팅 버튼(FAB) 및 챗봇 패널 -->
-<button class="fab" id="chatbotFab" title="챗봇 실행">🤖</button>
-<div class="overlay-backdrop" id="chatbotBackdrop"></div>
-<aside class="slide-panel" id="chatbotPanel">
-  <div class="panel-header"><h3>🤖 YouFlex 챗봇</h3><button class="panel-close" id="chatbotClose">✕</button></div>
+<!-- 퀴즈 실행 플로팅 버튼(FAB) 및 퀴즈 패널 -->
+<button class="fab" id="quizFab" title="퀴즈 실행">💡</button>
+<div class="overlay-backdrop" id="quizBackdrop"></div>
+<aside class="slide-panel" id="quizPanel">
+  <div class="panel-header"><h3>💡 YouFlex 퀴즈</h3><button class="panel-close" id="quizClose">✕</button></div>
   <div class="panel-body">
-    <!-- 챗봇 초기 안내 메시지 -->
-    <div class="chat-msg"><div class="avatar"></div><div class="bubble">무엇을 도와드릴까요? 객관식/OX 문제를 하루 3번(합산)까지 풀 수 있어요. 퀴즈를 시작하고 채팅창에 정답을 입력해보세요!</div></div>
     <!-- 퀴즈 기능 영역: 하루 3회(객관식+OX 합산) 제한 -->
     <div class="quiz-box" id="qnaQuizBox">
+      <p class="quiz-intro">객관식/OX 문제를 하루 3번(합산)까지 풀 수 있어요. 퀴즈를 시작하고 정답 버튼을 선택해보세요!</p>
       <div class="quiz-count" id="qnaQuizCount">🎯 오늘 남은 퀴즈 횟수: 3/3</div>
       <button class="btn btn-sm btn-primary" id="qnaQuizStartBtn">퀴즈 시작</button>
+      <!-- 문제 출제 시 이 안에 질문/선택지 버튼이 채워짐(app.js의 initQnaQuiz가 채움) -->
+      <div id="qnaQuizPlay" style="display:none">
+        <div class="quiz-question" id="qnaQuizQuestion"></div>
+        <div class="quiz-options" id="qnaQuizOptions"></div>
+      </div>
+      <div class="quiz-result" id="qnaQuizResult" style="display:none"></div>
     </div>
-    <!-- 문제 출제/정답 결과가 실제 대화처럼 여기 쌓임(app.js의 initQnaChatbotQuiz가 채움) -->
-    <div id="qnaQuizMessages"></div>
   </div>
-  <div class="panel-input-row"><input type="text" id="qnaQuizAnswerInput" placeholder="퀴즈를 먼저 시작해주세요" disabled /><button class="btn btn-primary" id="qnaQuizAnswerSendBtn" disabled>전송</button></div>
 </aside>
 
 <!-- 커뮤니티 채팅 패널: 목록/채팅/개설 탭 구성 -->
