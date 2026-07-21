@@ -352,12 +352,26 @@ function renderDraftList(drafts) {
         timeEl.className = 'draft-time';
         timeEl.textContent = timeStr;
 
+<<<<<<< HEAD
         infoEl.appendChild(titleEl);
         infoEl.appendChild(timeEl);
 
         // 버튼 영역 (불러오기 + 삭제)
         const actionsEl = document.createElement('div');
         actionsEl.className = 'draft-actions';
+=======
+    const loadBtn = document.createElement('button');
+    loadBtn.type = 'button';
+    loadBtn.className = 'btn btn-sm btn-load';
+    loadBtn.textContent = '불러오기';
+    loadBtn.addEventListener('click', () => loadDraft(draft.reviewDraftId));
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.className = 'btn btn-sm btn-delete';
+    deleteBtn.textContent = '삭제';
+    deleteBtn.addEventListener('click', () => deleteDraft(draft.reviewDraftId));
+>>>>>>> main
 
         const loadBtn = document.createElement('button');
         loadBtn.type = 'button';
@@ -383,6 +397,7 @@ function renderDraftList(drafts) {
 
 // 3. 불러오기 버튼 처리
 function loadDraft(draftId) {
+<<<<<<< HEAD
     fetch(`/review/draft/detail/${draftId}`)
         .then(response => {
             if (!response.ok) throw new Error('임시저장 조회 실패');
@@ -390,6 +405,15 @@ function loadDraft(draftId) {
         })
         .then(draft => {
             if (!draft) return;
+=======
+  fetch(`/review/draft/detail/${draftId}`)
+    .then(response => {
+      if (!response.ok) throw new Error('임시저장 조회 실패');
+      return response.json();
+    })
+    .then(draft => {
+      if (!draft) return;
+>>>>>>> main
 
 			const draftIdInput = document.getElementById('review_draft_id');
             const titleInput = document.getElementById('review_title');
@@ -436,10 +460,25 @@ function loadDraft(draftId) {
 
 // 4. 삭제 버튼 처리
 function deleteDraft(draftId) {
+<<<<<<< HEAD
     if (!confirm('이 임시저장 글을 삭제하시겠습니까?')) return;
 
     fetch(`/review/draft/delete/${draftId}`, {
         method: 'DELETE'
+=======
+  if (!confirm('이 임시저장 글을 삭제하시겠습니까?')) return;
+
+  fetch(`/review/draft/delete/${draftId}`, {
+    method: 'DELETE'
+  })
+    .then(response => {
+      if (response.ok) {
+        alert('삭제되었습니다.');
+        fetchDraftList(); // 삭제 후 목록 즉시 재조회
+      } else {
+        alert('삭제에 실패했습니다.');
+      }
+>>>>>>> main
     })
         .then(response => {
             if (response.ok) {
