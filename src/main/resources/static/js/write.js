@@ -223,15 +223,16 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchDraftList();
 
     /* ====== 게시글 임시저장 클릭 이벤트 ======*/
+    /* ====== 게시글 임시저장 클릭 이벤트 ======*/
     const draftBtn = document.getElementById('draftBtn');
     if (draftBtn) {
         draftBtn.addEventListener('click', () => {
-			const draftIdInput = document.getElementById('review_draft_id');
+            const draftIdInput = document.getElementById('review_draft_id');
             const titleInput = document.getElementById('review_title');
             const contentInput = document.getElementById('review_content');
             const reviewRelatedInput = document.getElementById('review_related');
 
-			const draftId = draftIdInput ? draftIdInput.value : '0';
+            const draftId = draftIdInput ? draftIdInput.value : '0';
             const title = titleInput ? titleInput.value.trim() : '';
             const content = contentInput ? contentInput.value.trim() : '';
             const reviewRelated = reviewRelatedInput ? reviewRelatedInput.value.trim() : '';
@@ -241,20 +242,99 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            /*new FormData() : HTML폼 전송 데이터를 자바스크립트 객체 형태로 쉽게 만들 수 있게 해주는 기능.*/
             const formData = new FormData();
-			formData.append('reviewDraftId', draftId);	// 기존 ID가 있으면 전송, 없으면 0 전송 
-            formData.append('reviewDraftTitle', title);	/*데이터 추가 : append(key, value)*/
+            formData.append('reviewDraftId', draftId);
+            formData.append('reviewDraftTitle', title);
             formData.append('reviewDraftContent', content);
             formData.append('reviewDraftRelated', reviewRelated);
-            console.log(formData);
 
-            fetch('/review/draft/save', {	/* 브라우저 내장 비동기 http 요청 함수 */
+            fetch('/review/draft/save', {
                 method: 'POST',
                 body: formData
             })
                 .then(async response => {
-                    /*401 : 로그인하지 않은 사용자가 접근했을 때 리턴하도록 설정된 에러 코드*/
+                    if (response.status === 401) {
+                        alert('로그인이 필요한 기능입니다.');
+                        return;
+                    }
+
+                    const resText = await response.text();
+
+                    if (response.ok) {
+                        if (resText === 'MISSING_GENRE') {
+                            alert('장르를 선택하지 않으면 임시저장을 할 수 없습니다. 관련 장르를 선택해주세요.');
+                            return;
+                        }
+                        if (resText === 'MAX_LIMIT_EXCEEDED') {
+                            alert('임시저장은 최대 5개까지만 가능합니다.\n기존 임시저장 글을 삭제 후 다시 시도해주세요.');
+                            return;
+                        }
+
+                        // 🌟 성공 시: 숫자로 들어온 reviewDraftId를 hidden input에 동적 세팅
+                        const savedDraftId = parseInt(resText, 10);
+                        if (!isNaN(savedDraftId) && savedDraftId > 0) {
+                            if (draftIdInput) {
+                                draftIdInput.value = savedDraftId; // 이제 두 번째 클릭 시 이 ID로 UPDATE 됩니다!
+                            }
+                        }
+
+                        // 성공 시 시각 표시
+                        const now = new Date();
+                        const hh = String(now.getHours()).padStart(2, '0');
+                        const mm = String(now.getMinutes()).padStart(2, '0');
+                        const timeStr = `${hh}:${mm}`;
+
+                        const hint = document.getElementById('autosaveHint');
+                        if (hint) {
+                            hint.textContent = `임시저장됨 (${timeStr})`;
+                            hint.classList.add('saved');
+                        }
+
+                        alert(`임시저장 되었습니다. (${timeStr})`);
+
+                        fetchDraftList(); // 목록 갱신
+                    } else {
+                        alert('임시저장에 실패했습니다.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Draft save error:', error);
+                    alert('서버 통신 중 오류가 발생했습니다.');
+                });
+        });
+    }
+    /*const draftBtn = document.getElementById('draftBtn');
+    if (draftBtn) {
+        draftBtn.addEventListener('click', () => {
+            const draftIdInput = document.getElementById('review_draft_id');
+            const titleInput = document.getElementById('review_title');
+            const contentInput = document.getElementById('review_content');
+            const reviewRelatedInput = document.getElementById('review_related');
+
+            const draftId = draftIdInput ? draftIdInput.value : '0';
+            const title = titleInput ? titleInput.value.trim() : '';
+            const content = contentInput ? contentInput.value.trim() : '';
+            const reviewRelated = reviewRelatedInput ? reviewRelatedInput.value.trim() : '';
+
+            if (!title && !content) {
+                alert('제목이나 내용 중 하나 이상 입력 후 임시저장해 주세요.');
+                return;
+            }
+
+            new FormData() : HTML폼 전송 데이터를 자바스크립트 객체 형태로 쉽게 만들 수 있게 해주는 기능.
+            const formData = new FormData();
+            formData.append('reviewDraftId', draftId);	// 기존 ID가 있으면 전송, 없으면 0 전송 
+            formData.append('reviewDraftTitle', title);	데이터 추가 : append(key, value)
+            formData.append('reviewDraftContent', content);
+            formData.append('reviewDraftRelated', reviewRelated);
+            console.log(formData);
+
+            fetch('/review/draft/save', {	 브라우저 내장 비동기 http 요청 함수 
+                method: 'POST',
+                body: formData
+            })
+                .then(async response => {
+                    401 : 로그인하지 않은 사용자가 접근했을 때 리턴하도록 설정된 에러 코드
                     if (response.status === 401) {
                         alert('로그인이 필요한 기능입니다.');
                         return;
@@ -264,8 +344,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (response.ok && restText === 'SUCCESS') {
                         // 저장 성공 시 현재 시각 표시 (예 : 15:55)
-                        const now = new Date();	/*new Date() : 현재 날짜와 시간 정보를 가지고 있는 내장 객체*/
-                        const hh = String(now.getHours()).padStart(2, '0');	/*padStart(2, '0') : 9분->09분*/
+                        const now = new Date();	new Date() : 현재 날짜와 시간 정보를 가지고 있는 내장 객체
+                        const hh = String(now.getHours()).padStart(2, '0');	padStart(2, '0') : 9분->09분
                         const mm = String(now.getMinutes()).padStart(2, '0');
                         const timeStr = `${hh}:${mm}`;
 
@@ -291,212 +371,173 @@ document.addEventListener('DOMContentLoaded', () => {
                     alert('서버 통신 중 오류가 발생했습니다.');
                 });
         });
-    }
+    }*/
 });
 
-// 1. 임시저장 목록 서버에서 조회해 오기
-function fetchDraftList() {
-    fetch('/review/draft/list')
-        .then(response => {
-            if (!response.ok) throw new Error('목록 조회 실패');
-            return response.json();
-        })
-        .then(drafts => {
-            renderDraftList(drafts);
-        })
-        .catch(error => {
-            console.error('Draft list fetch error:', error);
-        });
-}
-
-// 2. 화면에 임시저장 목록 UI 렌더링하기
-function renderDraftList(drafts) {
-    const listEl = document.getElementById('draftList');
-    const emptyMsg = document.getElementById('draftEmptyMsg');
-
-    if (!listEl) return;
-
-    listEl.innerHTML = ''; // 기존 목록 초기화
-
-    if (!drafts || drafts.length === 0) {
-        if (emptyMsg) emptyMsg.style.display = 'block';
-        return;
+    // 1. 임시저장 목록 서버에서 조회해 오기
+    function fetchDraftList() {
+        fetch('/review/draft/list')
+            .then(response => {
+                if (!response.ok) throw new Error('목록 조회 실패');
+                return response.json();
+            })
+            .then(drafts => {
+                renderDraftList(drafts);
+            })
+            .catch(error => {
+                console.error('Draft list fetch error:', error);
+            });
     }
-    if (emptyMsg) emptyMsg.style.display = 'none';
 
-    drafts.forEach(draft => {
-        const title = draft.reviewDraftTitle || '(제목 없음)';
+    // 2. 화면에 임시저장 목록 UI 렌더링하기
+    function renderDraftList(drafts) {
+        const listEl = document.getElementById('draftList');
+        const emptyMsg = document.getElementById('draftEmptyMsg');
 
-        // 시간 포맷 처리 (예: "15:55")
-        let timeStr = '';
-        if (draft.reviewDraftSavedAt) {
-            const dateObj = new Date(draft.reviewDraftSavedAt);
-            const hh = String(dateObj.getHours()).padStart(2, '0');
-            const mm = String(dateObj.getMinutes()).padStart(2, '0');
-            timeStr = `${hh}:${mm}`;
+        if (!listEl) return;
+
+        listEl.innerHTML = ''; // 기존 목록 초기화
+
+        if (!drafts || drafts.length === 0) {
+            if (emptyMsg) emptyMsg.style.display = 'block';
+            return;
         }
+        if (emptyMsg) emptyMsg.style.display = 'none';
 
-        // 아이템 생성
-        const item = document.createElement('div');
-        item.className = 'draft-item';
+        drafts.forEach(draft => {
+            const title = draft.reviewDraftTitle || '(제목 없음)';
 
-        // 정보 영역 (제목 + 시간)
-        const infoEl = document.createElement('div');
-        infoEl.className = 'draft-info';
-
-        const titleEl = document.createElement('div');
-        titleEl.className = 'draft-title';
-        titleEl.textContent = title;
-
-        const timeEl = document.createElement('div');
-        timeEl.className = 'draft-time';
-        timeEl.textContent = timeStr;
-
-<<<<<<< HEAD
-        infoEl.appendChild(titleEl);
-        infoEl.appendChild(timeEl);
-
-        // 버튼 영역 (불러오기 + 삭제)
-        const actionsEl = document.createElement('div');
-        actionsEl.className = 'draft-actions';
-=======
-    const loadBtn = document.createElement('button');
-    loadBtn.type = 'button';
-    loadBtn.className = 'btn btn-sm btn-load';
-    loadBtn.textContent = '불러오기';
-    loadBtn.addEventListener('click', () => loadDraft(draft.reviewDraftId));
-
-    const deleteBtn = document.createElement('button');
-    deleteBtn.type = 'button';
-    deleteBtn.className = 'btn btn-sm btn-delete';
-    deleteBtn.textContent = '삭제';
-    deleteBtn.addEventListener('click', () => deleteDraft(draft.reviewDraftId));
->>>>>>> main
-
-        const loadBtn = document.createElement('button');
-        loadBtn.type = 'button';
-        loadBtn.className = 'btn btn-sm btn-load';
-        loadBtn.textContent = '불러오기';
-        loadBtn.addEventListener('click', () => loadDraft(draft.reviewDraftId));
-
-        const deleteBtn = document.createElement('button');
-        deleteBtn.type = 'button';
-        deleteBtn.className = 'btn btn-sm btn-delete';
-        deleteBtn.textContent = '삭제';
-        deleteBtn.addEventListener('click', () => deleteDraft(draft.reviewDraftId));
-
-        actionsEl.appendChild(loadBtn);
-        actionsEl.appendChild(deleteBtn);
-
-        item.appendChild(infoEl);
-        item.appendChild(actionsEl);
-
-        listEl.appendChild(item);
-    });
-}
-
-// 3. 불러오기 버튼 처리
-function loadDraft(draftId) {
-<<<<<<< HEAD
-    fetch(`/review/draft/detail/${draftId}`)
-        .then(response => {
-            if (!response.ok) throw new Error('임시저장 조회 실패');
-            return response.json();
-        })
-        .then(draft => {
-            if (!draft) return;
-=======
-  fetch(`/review/draft/detail/${draftId}`)
-    .then(response => {
-      if (!response.ok) throw new Error('임시저장 조회 실패');
-      return response.json();
-    })
-    .then(draft => {
-      if (!draft) return;
->>>>>>> main
-
-			const draftIdInput = document.getElementById('review_draft_id');
-            const titleInput = document.getElementById('review_title');
-            const contentInput = document.getElementById('review_content');
-            const relatedInput = document.getElementById('review_related');
-
-            // 1) 제목 & 내용 복구
-            if (titleInput) titleInput.value = draft.reviewDraftTitle || '';
-            if (contentInput) contentInput.value = draft.reviewDraftContent || '';
-            if (relatedInput) relatedInput.value = draft.reviewDraftRelated || '';
-
-
-            // 2) 별점 복구
-            if (draft.reviewRating !== undefined && ratingInput) {
-                const score = parseFloat(draft.reviewRating || 0);
-                ratingInput.value = score;
-                updateStars(score);
+            // 시간 포맷 처리 (예: "15:55")
+            let timeStr = '';
+            if (draft.reviewDraftSavedAt) {
+                const dateObj = new Date(draft.reviewDraftSavedAt);
+                const hh = String(dateObj.getHours()).padStart(2, '0');
+                const mm = String(dateObj.getMinutes()).padStart(2, '0');
+                timeStr = `${hh}:${mm}`;
             }
 
-            // 3) 선택했던 장르 복구
-            if (draft.genreCategoryIds && genreGrid) {
-                const ids = draft.genreCategoryIds.map(id => String(id));
-                genreGrid.querySelectorAll('.genre-chip').forEach(chip => {
-                    const gId = chip.getAttribute('data-genre-id');
-                    if (ids.includes(gId)) {
-                        chip.classList.add('selected');
-                    } else {
-                        chip.classList.remove('selected');
-                    }
-                });
+            // 아이템 생성
+            const item = document.createElement('div');
+            item.className = 'draft-item';
 
-                if (genreDoneBtn) {
-                    genreDoneBtn.click();
+            // 정보 영역 (제목 + 시간)
+            const infoEl = document.createElement('div');
+            infoEl.className = 'draft-info';
+
+            const titleEl = document.createElement('div');
+            titleEl.className = 'draft-title';
+            titleEl.textContent = title;
+
+            const timeEl = document.createElement('div');
+            timeEl.className = 'draft-time';
+            timeEl.textContent = timeStr;
+
+            infoEl.appendChild(titleEl);
+            infoEl.appendChild(timeEl);
+
+            // 버튼 영역 (불러오기 + 삭제)
+            const actionsEl = document.createElement('div');
+            actionsEl.className = 'draft-actions';
+
+            const loadBtn = document.createElement('button');
+            loadBtn.type = 'button';
+            loadBtn.className = 'btn btn-sm btn-load';
+            loadBtn.textContent = '불러오기';
+            loadBtn.addEventListener('click', () => loadDraft(draft.reviewDraftId));
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.type = 'button';
+            deleteBtn.className = 'btn btn-sm btn-delete';
+            deleteBtn.textContent = '삭제';
+            deleteBtn.addEventListener('click', () => deleteDraft(draft.reviewDraftId));
+
+            actionsEl.appendChild(loadBtn);
+            actionsEl.appendChild(deleteBtn);
+
+            item.appendChild(infoEl);
+            item.appendChild(actionsEl);
+
+            listEl.appendChild(item);
+        });
+    }
+
+    // 3. 불러오기 버튼 처리
+    function loadDraft(draftId) {
+        fetch(`/review/draft/detail/${draftId}`)
+            .then(response => {
+                if (!response.ok) throw new Error('임시저장 조회 실패');
+                return response.json();
+            })
+            .then(draft => {
+                if (!draft) return;
+
+                const draftIdInput = document.getElementById('review_draft_id');
+                const titleInput = document.getElementById('review_title');
+                const contentInput = document.getElementById('review_content');
+                const relatedInput = document.getElementById('review_related');
+
+                // 1) 제목 & 내용 복구
+                if (titleInput) titleInput.value = draft.reviewDraftTitle || '';
+                if (contentInput) contentInput.value = draft.reviewDraftContent || '';
+                if (relatedInput) relatedInput.value = draft.reviewDraftRelated || '';
+
+
+                // 2) 별점 복구
+                if (draft.reviewRating !== undefined && ratingInput) {
+                    const score = parseFloat(draft.reviewRating || 0);
+                    ratingInput.value = score;
+                    updateStars(score);
                 }
-            }
 
-            alert('임시저장된 내용을 불러왔습니다.');
+                // 3) 선택했던 장르 복구
+                if (draft.genreCategoryIds && genreGrid) {
+                    const ids = draft.genreCategoryIds.map(id => String(id));
+                    genreGrid.querySelectorAll('.genre-chip').forEach(chip => {
+                        const gId = chip.getAttribute('data-genre-id');
+                        if (ids.includes(gId)) {
+                            chip.classList.add('selected');
+                        } else {
+                            chip.classList.remove('selected');
+                        }
+                    });
+
+                    if (genreDoneBtn) {
+                        genreDoneBtn.click();
+                    }
+                }
+
+                alert('임시저장된 내용을 불러왔습니다.');
+            })
+            .catch(error => {
+                console.error('Draft load error:', error);
+                alert('임시저장 불러오기에 실패했습니다.');
+            });
+    }
+
+    // 4. 삭제 버튼 처리
+    function deleteDraft(draftId) {
+        if (!confirm('이 임시저장 글을 삭제하시겠습니까?')) return;
+
+        fetch(`/review/draft/delete/${draftId}`, {
+            method: 'DELETE'
         })
-        .catch(error => {
-            console.error('Draft load error:', error);
-            alert('임시저장 불러오기에 실패했습니다.');
-        });
-}
+            .then(response => {
+                if (response.ok) {
+                    alert('삭제되었습니다.');
 
-// 4. 삭제 버튼 처리
-function deleteDraft(draftId) {
-<<<<<<< HEAD
-    if (!confirm('이 임시저장 글을 삭제하시겠습니까?')) return;
+                    // 현재 폼에 불러와진 글을 삭제한 것이라면 ID 초기화
+                    const draftIdInput = document.getElementById('review_draft_id');
+                    if (draftIdInput && draftIdInput.value == draftId) {
+                        draftIdInput.value = '0';
+                    }
 
-    fetch(`/review/draft/delete/${draftId}`, {
-        method: 'DELETE'
-=======
-  if (!confirm('이 임시저장 글을 삭제하시겠습니까?')) return;
-
-  fetch(`/review/draft/delete/${draftId}`, {
-    method: 'DELETE'
-  })
-    .then(response => {
-      if (response.ok) {
-        alert('삭제되었습니다.');
-        fetchDraftList(); // 삭제 후 목록 즉시 재조회
-      } else {
-        alert('삭제에 실패했습니다.');
-      }
->>>>>>> main
-    })
-        .then(response => {
-            if (response.ok) {
-                alert('삭제되었습니다.');
-				
-				// 현재 폼에 불러와진 글을 삭제한 것이라면 ID 초기화
-				const draftIdInput = document.getElementById('review_draft_id');
-				if(draftIdInput && draftIdInput.value == draftId){
-					draftIdInput.value ='0';
-				}
-				
-				fetchDraftList(); // 삭제 후 목록 즉시 재조회
-            } else {
-                alert('삭제에 실패했습니다.');
-            }
-        })
-        .catch(error => {
-            console.error('Draft delete error:', error);
-            alert('삭제 중 오류가 발생했습니다.');
-        });
-}
+                    fetchDraftList(); // 삭제 후 목록 즉시 재조회
+                } else {
+                    alert('삭제에 실패했습니다.');
+                }
+            })
+            .catch(error => {
+                console.error('Draft delete error:', error);
+                alert('삭제 중 오류가 발생했습니다.');
+            });
+    }

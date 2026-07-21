@@ -9,7 +9,8 @@
 	</delete>
 
 	<!-- 2. 제목, 내용, 저장 시각 INSERT -->
-	<insert id="insertDraft" parameterType="com.youflex.dto.ReviewDraftDTO">
+	<insert id="insertDraft" parameterType="com.youflex.dto.ReviewDraftDTO"
+	useGeneratedKeys="true" keyProperty="reviewDraftId">
 		INSERT INTO review_draft(
 			member_id,
 			review_draft_title,

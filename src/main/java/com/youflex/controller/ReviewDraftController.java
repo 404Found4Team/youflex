@@ -42,17 +42,17 @@ public class ReviewDraftController {
 		
 		draftService.saveDraft(draftDTO);
 		
-		
+		return ResponseEntity.ok(String.valueOf(draftDTO.getReviewDraftId()));
 		
 		// 들어오는 데이터 검증용 로그(콘솔에서 확인해보세요)
-		System.out.println("=== 임시저장 요청 데이터 ===");
-	    System.out.println("Title: " + draftDTO.getReviewDraftTitle());
-	    System.out.println("Content: " + draftDTO.getReviewDraftContent());
-	    System.out.println("Related: " + draftDTO.getReviewDraftRelated());
+//		System.out.println("=== 임시저장 요청 데이터 ===");
+//	    System.out.println("Title: " + draftDTO.getReviewDraftTitle());
+//	    System.out.println("Content: " + draftDTO.getReviewDraftContent());
+//	    System.out.println("Related: " + draftDTO.getReviewDraftRelated());
 	    
-	    draftService.saveDraft(draftDTO);
+	    // draftService.saveDraft(draftDTO);
 	    
-	    return ResponseEntity.ok("SUCCESS");
+	    //return ResponseEntity.ok("SUCCESS");
 	}
 
 	// 2. 임시저장 목록 조회(최대 5개)
