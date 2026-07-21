@@ -1,5 +1,4 @@
 package com.youflex.controller;
-
 import java.util.List;
 import java.util.Map;
 
@@ -18,10 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.youflex.dto.ChatroomDTO;
 import com.youflex.dto.MemberDTO;
 import com.youflex.service.ChatroomService;
-
 import jakarta.servlet.http.HttpSession;
-
-// ★ 프론트 app.js가 부르는 URL이 전부 단수형 "/api/chatroom" 이므로 여기에 맞춤
+import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/chatroom")
 public class ChatroomController {

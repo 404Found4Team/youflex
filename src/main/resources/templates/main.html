@@ -37,26 +37,17 @@
         <button class="hero-arrow prev" id="heroPrev">‹</button>
         <button class="hero-arrow next" id="heroNext">›</button>
 
-        <div class="hero-slide-content active">
-          <img
-            src="./assets/img/hope.webp"
-            class="hero-banner-img"
-          />
-          <span class="hero-badge">NETFLIX 시리즈</span>
+        <div th:each="b, stat : ${bannerList}"
+             th:class="${stat.first} ? 'hero-slide-content active' : 'hero-slide-content'">
+          <img th:src="@{'/upload/' + ${b.bannerImg}}" class="hero-banner-img" />
+          <span class="hero-badge" th:text="${b.bannerBadge}">NETFLIX 시리즈</span>
         </div>
-        <div class="hero-slide-content">
-          <img src="./assets/img/mandalllll.webp" class="hero-banner-img" />
+        <div class="hero-slide-content active" th:if="${#lists.isEmpty(bannerList)}">
+          <span class="hero-badge">등록된 배너가 없습니다</span>
+        </div>
 
-          <span class="hero-badge">DISNEY+ 시리즈</span>
-        </div>
-        <div class="hero-slide-content">
-          <img src="./assets/img/tomorrow.jpg" class="hero-banner-img" />
-          <span class="hero-badge">TVING 오리지널</span>
-        </div>
         <div class="hero-dots">
-          <span class="active"></span>
-          <span></span>
-          <span></span>
+          <span th:each="b, stat : ${bannerList}" th:class="${stat.first} ? 'active' : ''"></span>
         </div>
       </section>
 
@@ -507,14 +498,14 @@
       </div>
     </aside>
 
-    <!-- 
+    <!--
   ================================
-  챗봇 영역
+  퀴즈 영역
   ================================
   -->
-    <button class="fab" id="chatbotFab" title="챗봇 실행">🤖</button>
-    <div class="overlay-backdrop" id="chatbotBackdrop"></div>
-    <aside class="slide-panel" id="chatbotPanel" th:replace="~{fragments/layout :: chatbot}"></aside>
+    <button class="fab" id="quizFab" title="퀴즈 실행">💡</button>
+    <div class="overlay-backdrop" id="quizBackdrop"></div>
+    <aside class="slide-panel" id="quizPanel" th:replace="~{fragments/layout :: quiz}"></aside>
 
     <!-- 
   ================================
