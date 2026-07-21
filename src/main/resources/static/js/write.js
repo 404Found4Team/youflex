@@ -183,108 +183,101 @@ if (imgInput && imgPreview) {
 
 
 // ===== [4] 서버 DB 기반 임시저장 관리 기능 =====
-
 document.addEventListener('DOMContentLoaded', () => {
     // 페이지 로드 시 임시저장 목록 조회
     fetchDraftList();
 
-	/* ====== 게시글 임시저장 클릭 이벤트 ====== */
-	const draftBtn = document.getElementById('draftBtn');
-	if (draftBtn) {
-	    draftBtn.addEventListener('click', () => {
-	        // [수정 1] 클릭하는 '시점'의 최신 DOM 요소들을 새로 가져옵니다.
-	        const draftIdInput = document.getElementById('review_draft_id');
-	        const titleInput = document.getElementById('review_title');
-	        const contentInput = document.getElementById('review_content');
-	        const reviewRelatedInput = document.getElementById('review_related');
+    /* ====== 게시글 임시저장 클릭 이벤트 ====== */
+    const draftBtn = document.getElementById('draftBtn');
+    if (draftBtn) {
+        draftBtn.addEventListener('click', () => {
+            // ★ [원인 해결 1] id가 review_draft_id 이거나 reviewDraftId 인 경우 모두 안전하게 요소 탐색
+            const draftIdInput = document.getElementById('review_draft_id') || document.getElementById('reviewDraftId');
+            const titleInput = document.getElementById('review_title') || document.getElementById('reviewTitle');
+            const contentInput = document.getElementById('review_content') || document.getElementById('reviewContent');
+            const reviewRelatedInput = document.getElementById('review_related') || document.getElementById('reviewRelated');
 
-	        // [수정 2] input태그의 현재 value를 읽어옵니다.
-	        // - 첫 번째 저장 : value가 "0" 또는 "" 이므로 0 (-> 신규 INSERT 진행)
-	        // - 두 번째 저장 : 첫 번째 저장 후 세팅된 ID값(예: 15)을 읽어옴 (-> 기존 글 UPDATE 진행)
-	        const rawDraftId = draftIdInput ? parseInt(draftIdInput.value, 10) : 0;
-	        
-	        // ★ [수정 3 - 2번 방식 적용] isNaN() 없이 자기비교(x === x)로 NaN 판별
-	        // rawDraftId가 NaN이면 (rawDraftId === rawDraftId) 결과가 false가 됩니다.
-	        const draftId = (rawDraftId === rawDraftId) ? rawDraftId : 0;
+            // ★ [원인 해결 2] 현재 input 태그의 value를 정확히 읽어옴
+            let draftId = 0;
+            if (draftIdInput && draftIdInput.value) {
+                const parsed = parseInt(draftIdInput.value, 10);
+                if (!isNaN(parsed) && parsed > 0) {
+                    draftId = parsed;
+                }
+            }
 
-	        const title = titleInput ? titleInput.value.trim() : '';
-	        const content = contentInput ? contentInput.value.trim() : '';
-	        const reviewRelated = reviewRelatedInput ? reviewRelatedInput.value.trim() : '';
+            const title = titleInput ? titleInput.value.trim() : '';
+            const content = contentInput ? contentInput.value.trim() : '';
+            const reviewRelated = reviewRelatedInput ? reviewRelatedInput.value.trim() : '';
 
-	        if (!title && !content) {
-	            alert('제목이나 내용 중 하나 이상 입력 후 임시저장해 주세요.');
-	            return;
-	        }
+            if (!title && !content) {
+                alert('제목이나 내용 중 하나 이상 입력 후 임시저장해 주세요.');
+                return;
+            }
 
-	        // DTO 객체 생성 (두 번째 클릭부터는 draftId > 0 값이 들어가 UPDATE 처리됨)
-	        const draftDTO = {
-	            reviewDraftId: draftId, 
-	            reviewDraftTitle: title,
-	            reviewDraftContent: content,
-	            reviewDraftRelated: reviewRelated
-	        };
+            // DTO 객체 생성 (첫 저장이면 draftId=0 -> INSERT, 두번째부터는 draftId>0 -> UPDATE)
+            const draftDTO = {
+                reviewDraftId: draftId, 
+                reviewDraftTitle: title,
+                reviewDraftContent: content,
+                reviewDraftRelated: reviewRelated
+            };
 
-	        fetch('/review/draft/save', {
-	            method: 'POST',
-	            headers: {
-	                'Content-Type': 'application/json'
-	            },
-	            body: JSON.stringify(draftDTO)
-	        })
-	        .then(async response => {
-	            if (response.status === 401) {
-	                alert('로그인이 필요한 기능입니다.');
-	                return;
-	            }
+            fetch('/review/draft/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(draftDTO)
+            })
+            .then(async response => {
+                if (response.status === 401) {
+                    alert('로그인이 필요한 기능입니다.');
+                    return;
+                }
 
-	            const resText = await response.text();
+                const resText = await response.text();
 
-	            if (response.ok) {
-	                if (resText === 'MAX_LIMIT_EXCEEDED') {
-	                    alert('임시저장은 최대 5개까지만 가능합니다.\n기존 임시저장 글을 삭제 후 다시 시도해주세요.');
-	                    return;
-	                }
+                if (response.ok) {
+                    if (resText === 'MAX_LIMIT_EXCEEDED') {
+                        alert('임시저장은 최대 5개까지만 가능합니다.\n기존 임시저장 글을 삭제 후 다시 시도해주세요.');
+                        return;
+                    }
 
-	                // 서버에서 응답받은 새/기존 draftId 문자열을 숫자(정수)로 파싱합니다.
-	                const savedDraftId = parseInt(resText, 10);
-	                
-	                // ★ [수정 4 - 2번 방식 적용 핵심★] 
-	                // 1) (savedDraftId === savedDraftId) : isNaN()을 쓰지 않고 NaN이 아닌지 검사
-	                // 2) (savedDraftId > 0) : 유효한 DB PK 번호인지 검사
-	                if (savedDraftId === savedDraftId && savedDraftId > 0) {
-	                    if (draftIdInput) {
-	                        // <input id="review_draft_id">의 value를 생성된 ID로 즉시 덮어씁니다.
-	                        // 이 처리가 되어야 다음 임시저장 클릭 시 UPDATE가 정상 수행됩니다!
-	                        draftIdInput.value = savedDraftId;
-	                    }
-	                }
+                    // ★ [핵심 해결 3] 서버에서 반환받은 PK(숫자)를 input 요소의 value와 attribute에 동시에 강제 설정!
+                    const savedDraftId = parseInt(resText, 10);
+                    if (!isNaN(savedDraftId) && savedDraftId > 0) {
+                        if (draftIdInput) {
+                            draftIdInput.value = savedDraftId;
+                            draftIdInput.setAttribute('value', savedDraftId); // DOM 속성까지 동기화
+                        }
+                    }
 
-	                const now = new Date();
-	                const hh = String(now.getHours()).padStart(2, '0');
-	                const mm = String(now.getMinutes()).padStart(2, '0');
-	                const timeStr = `${hh}:${mm}`;
+                    const now = new Date();
+                    const hh = String(now.getHours()).padStart(2, '0');
+                    const mm = String(now.getMinutes()).padStart(2, '0');
+                    const timeStr = `${hh}:${mm}`;
 
-	                const hint = document.getElementById('autosaveHint');
-	                if (hint) {
-	                    hint.textContent = `임시저장됨 (${timeStr})`;
-	                    hint.classList.add('saved');
-	                }
+                    const hint = document.getElementById('autosaveHint');
+                    if (hint) {
+                        hint.textContent = `임시저장됨 (${timeStr})`;
+                        hint.classList.add('saved');
+                    }
 
-	                alert(`임시저장 되었습니다. (${timeStr})`);
-	                
-	                // 우측 사이드바/모달 등의 임시저장 목록 갱신
-	                fetchDraftList();
-	            } else {
-	                alert('임시저장에 실패했습니다.');
-	            }
-	        })
-	        .catch(error => {
-	            console.error('Draft save error:', error);
-	            alert('서버 통신 중 오류가 발생했습니다.');
-	        });
-	    });
-	}
-    
+                    alert(`임시저장 되었습니다. (${timeStr})`);
+                    
+                    // 우측 사이드바/모달 등의 임시저장 목록 갱신
+                    fetchDraftList();
+                } else {
+                    alert('임시저장에 실패했습니다.');
+                }
+            })
+            .catch(error => {
+                console.error('Draft save error:', error);
+                alert('서버 통신 중 오류가 발생했습니다.');
+            });
+        });
+    }
 });
 
 // 1. 임시저장 목록 서버에서 조회해 오기
@@ -352,13 +345,23 @@ function renderDraftList(drafts) {
         loadBtn.type = 'button';
         loadBtn.className = 'btn btn-sm btn-load';
         loadBtn.textContent = '불러오기';
-        loadBtn.addEventListener('click', () => loadDraft(draft.reviewDraftId));
+
+        // ★ [수정 3] 클릭 이벤트 리스너 등록
+        loadBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            loadDraft(draft.reviewDraftId);
+        });
 
         const deleteBtn = document.createElement('button');
         deleteBtn.type = 'button';
         deleteBtn.className = 'btn btn-sm btn-delete';
         deleteBtn.textContent = '삭제';
-        deleteBtn.addEventListener('click', () => deleteDraft(draft.reviewDraftId));
+
+        // ★ [수정 4] 삭제 버튼 클릭 시 이벤트 버블링 방지(e.stopPropagation) 적용
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteDraft(draft.reviewDraftId);
+        });
 
         actionsEl.appendChild(loadBtn);
         actionsEl.appendChild(deleteBtn);
@@ -386,7 +389,8 @@ function loadDraft(draftId) {
             const relatedInput = document.getElementById('review_related');
 
             if (draftIdInput) {
-                draftIdInput.value = draft.reviewDraftId;
+                // ★ [수정 5] 불러온 데이터의 ID값을 hidden input에 대입
+                draftIdInput.value = String(draft.reviewDraftId);
             }
 
             if (titleInput) titleInput.value = draft.reviewDraftTitle || '';
@@ -405,6 +409,7 @@ function loadDraft(draftId) {
 function deleteDraft(draftId) {
     if (!confirm('이 임시저장 글을 삭제하시겠습니까?')) return;
 
+	// ★ [수정 6] 컨트롤러 매핑 주소(/review/draft/delete/{draftId})와 일치하도록 URL 수정
     fetch(`/review/draft/delete/${draftId}`, {
         method: 'DELETE'
     })
