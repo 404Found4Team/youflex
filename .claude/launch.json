@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "youflex-bootrun",
+      "runtimeExecutable": "C:\\ggukbi_kis\\팀 프로젝트\\youflex\\gradlew.bat",
+      "runtimeArgs": ["bootRun"],
+      "port": 7080
+    }
+  ]
+}
