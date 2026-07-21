@@ -2,7 +2,13 @@
 // OTT 리뷰 웹사이트 - 화면 초안 공통 인터랙션 (와이어프레임 목업용)
 // ==========================================================================
 
-
+// ==========================================================================
+// 현재 입장해 있는 채팅방 ID (전역 상태)
+// - enterChatroom()에서 입장에 성공하면 여기 저장
+// - 나가기 버튼(chatroomLeaveBtn)에서 이 값을 사용해 어느 방을 나갈지 판단
+// - 나가기 성공/패널 닫기 시 null로 초기화
+// ==========================================================================
+let currentChatroomId = null;
 
 // ==========================================================================
 // 오버레이 패널 공통 함수 (챗봇 / 채팅방 / 알림 패널이 모두 이 함수를 재사용함)
@@ -91,159 +97,134 @@ function initTabs(tabGroupSelector) {
 }
 
 // ==========================================================================
-// 챗봇 퀴즈: DB에서 객관식 1문제 + OX 1문제를 뽑아 출제, 하루 3번 제한
+// 챗봇 퀴즈: /api/quiz/random으로 문제를 받아 채팅 메시지로 출제하고,
+// 채팅 입력창(panel-input-row)에 타이핑한 답을 /api/quiz/answer로 채점받는다.
+// 객관식/OX 합쳐서 하루 3회, 서버(quiz_attempt 테이블)가 기준으로 제한한다.
 // ==========================================================================
-const QNA_QUIZ_DAILY_LIMIT = 3; // 하루 최대 도전 횟수
-
-// 문제 은행 (실제 서비스에서는 DB에서 랜덤 조회하도록 교체 예정)
-const QNA_QUIZ_QUESTION_BANK = {
-    mc: [
-        { question: '「오징어게임」은 어느 플랫폼의 오리지널 시리즈일까요?', options: ['디즈니플러스', '넷플릭스', '티빙', '웨이브'], answerIndex: 1 },
-        { question: '다음 중 국내 OTT 플랫폼이 아닌 것은?', options: ['티빙', '웨이브', '쿠팡플레이', 'HBO'], answerIndex: 3 },
-        { question: '「무빙」은 어느 플랫폼에서 방영되었을까요?', options: ['디즈니플러스', '넷플릭스', '티빙', '왓챠'], answerIndex: 0 },
-    ],
-    ox: [
-        { question: '티빙(TVING)은 CJ ENM이 운영하는 국내 OTT 서비스이다.', answer: true },
-        { question: '디즈니플러스는 국내 오리지널 콘텐츠를 전혀 제작하지 않는다.', answer: false },
-        { question: '넷플릭스는 광고 요금제를 제공한 적이 없다.', answer: false },
-    ],
-};
-
-// 오늘 날짜를 "YYYY-MM-DD" 문자열로 반환 (localStorage에 날짜별로 횟수를 저장하기 위함)
-function qnaQuizTodayKey() {
-    const now = new Date();
-    const pad = (n) => String(n).padStart(2, '0');
-    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-}
-
-// 오늘 남은 퀴즈 횟수를 반환. 날짜가 바뀌었으면 자동으로 초기화(리셋)한다.
-function qnaQuizAttemptsLeft() {
-    const today = qnaQuizTodayKey();
-    if (localStorage.getItem('qnaQuizDate') !== today) {
-        // 저장된 날짜와 오늘 날짜가 다르면(=날이 바뀌었으면) 횟수를 다시 3으로 채움
-        localStorage.setItem('qnaQuizDate', today);
-        localStorage.setItem('qnaQuizAttemptsLeft', String(QNA_QUIZ_DAILY_LIMIT));
-    }
-    return Number(localStorage.getItem('qnaQuizAttemptsLeft') || QNA_QUIZ_DAILY_LIMIT);
-}
-
-// 퀴즈 1회 사용 처리 (남은 횟수를 1 차감하고 저장)
-function qnaQuizUseAttempt() {
-    const left = Math.max(0, qnaQuizAttemptsLeft() - 1);
-    localStorage.setItem('qnaQuizAttemptsLeft', String(left));
-    return left;
-}
-
-// 배열에서 랜덤으로 하나 뽑기
-function qnaQuizPickRandom(list) {
-    return list[Math.floor(Math.random() * list.length)];
-}
-
-// 챗봇 패널 안의 퀴즈 UI 초기화 (문제 출제 -> 정답 체크 -> 결과 표시 흐름 전체)
 function initQnaChatbotQuiz() {
     const startBtn = document.getElementById('qnaQuizStartBtn');
     const countLabel = document.getElementById('qnaQuizCount');
-    const playBox = document.getElementById('qnaQuizPlay');
-    const progressLabel = document.getElementById('qnaQuizProgress');
-    const questionLabel = document.getElementById('qnaQuizQuestion');
-    const optionsBox = document.getElementById('qnaQuizOptions');
-    const nextBtn = document.getElementById('qnaQuizNextBtn');
-    const resultBox = document.getElementById('qnaQuizResult');
+    const messagesBox = document.getElementById('qnaQuizMessages');
+    const answerInput = document.getElementById('qnaQuizAnswerInput');
+    const answerSendBtn = document.getElementById('qnaQuizAnswerSendBtn');
     if (!startBtn) return; // 챗봇 퀴즈 UI가 없는 페이지면 종료
 
-    let questions = [];   // 이번 판에 출제된 문제 2개 (객관식 1 + OX 1)
-    let step = 0;          // 몇 번째 문제인지 (0 또는 1)
-    let correctCount = 0;  // 맞춘 개수
+    let currentQuiz = null; // 지금 출제 중인 문제(quizId 포함). null이면 채점 제출을 받지 않음.
 
-    // 남은 횟수 UI 갱신 + 버튼 활성/비활성 처리
-    function renderCount() {
-        const left = qnaQuizAttemptsLeft();
-        countLabel.textContent = `🎯 오늘 남은 퀴즈 횟수: ${left}/${QNA_QUIZ_DAILY_LIMIT}`;
-        startBtn.disabled = left <= 0;
-        startBtn.textContent = left <= 0 ? '오늘 퀴즈를 모두 사용했어요' : '퀴즈 시작';
+    // 챗봇이 보낸 것처럼 보이는 말풍선 추가(줄바꿈이 그대로 보이도록 pre-line 처리)
+    function addBotMessage(text) {
+        const msg = document.createElement('div');
+        msg.className = 'chat-msg';
+        msg.innerHTML = '<div class="avatar"></div><div class="bubble"></div>';
+        const bubble = msg.querySelector('.bubble');
+        bubble.style.whiteSpace = 'pre-line';
+        bubble.textContent = text;
+        messagesBox.appendChild(msg);
+        messagesBox.scrollTop = messagesBox.scrollHeight;
     }
 
-    // 현재 step에 해당하는 문제를 화면에 그림
-    function renderQuestion() {
-        const q = questions[step];
-        progressLabel.textContent = `문제 ${step + 1}/${questions.length} · ${q.type === 'mc' ? '객관식' : 'OX'}`;
-        questionLabel.textContent = q.question;
-        optionsBox.innerHTML = '';
-        nextBtn.style.display = 'none';
+    // 내가 타이핑해서 보낸 답을 오른쪽 말풍선으로 추가
+    function addUserMessage(text) {
+        const msg = document.createElement('div');
+        msg.className = 'chat-msg me';
+        msg.innerHTML = '<div class="avatar"></div><div class="bubble"></div>';
+        msg.querySelector('.bubble').textContent = text;
+        messagesBox.appendChild(msg);
+        messagesBox.scrollTop = messagesBox.scrollHeight;
+    }
 
-        // 객관식이면 options 배열 그대로, OX면 O/X 2개짜리 선택지로 변환
-        const choices = q.type === 'mc'
-            ? q.options.map((label, i) => ({ label, correct: i === q.answerIndex }))
-            : [{ label: 'O', correct: q.answer === true }, { label: 'X', correct: q.answer === false }];
+    // 답을 입력받을 수 있는 상태인지에 따라 채팅 입력창을 켜고 끔
+    function setAnswering(enabled) {
+        answerInput.disabled = !enabled;
+        answerSendBtn.disabled = !enabled;
+        answerInput.placeholder = enabled ? '정답을 입력하세요 (객관식은 번호, OX는 O/X)' : '퀴즈를 먼저 시작해주세요';
+        if (enabled) answerInput.focus();
+    }
 
-        // 선택지 버튼들을 동적으로 생성
-        choices.forEach((choice) => {
-            const btn = document.createElement('button');
-            btn.textContent = choice.label;
-            btn.dataset.correct = String(choice.correct);
-            btn.addEventListener('click', () => {
-                // 정답 선택 후에는 모든 선택지를 비활성화(중복 클릭 방지)
-                Array.from(optionsBox.children).forEach((b) => (b.disabled = true));
-                if (choice.correct) {
-                    btn.classList.add('correct');
-                    correctCount += 1;
-                } else {
-                    btn.classList.add('wrong');
-                    // 오답을 골랐을 경우 정답도 함께 하이라이트 해줌
-                    const correctBtn = Array.from(optionsBox.children).find((b) => b.dataset.correct === 'true');
-                    if (correctBtn) correctBtn.classList.add('correct');
+    // 남은 횟수 표시 + 시작 버튼 활성/비활성
+    function renderCount(remaining) {
+        countLabel.textContent = `🎯 오늘 남은 퀴즈 횟수: ${remaining}/3`;
+        startBtn.disabled = remaining <= 0;
+        startBtn.textContent = remaining <= 0 ? '오늘 퀴즈를 모두 사용했어요' : '퀴즈 시작';
+    }
+
+    // 서버에서 문제 하나를 받아와 채팅 메시지로 출제
+    function startQuiz() {
+        fetch('/api/quiz/random')
+            .then((res) => {
+                if (res.status === 401) throw new Error('unauthorized');
+                if (!res.ok) throw new Error('quiz request failed');
+                return res.json();
+            })
+            .then((data) => {
+                renderCount(data.remainingAttempts);
+                if (!data.quiz || !data.quiz.quizId) {
+                    addBotMessage('오늘 퀴즈 응시 횟수를 모두 사용했어요. 내일 다시 도전해주세요!');
+                    return;
                 }
-                // 다음 문제가 남아있으면 "다음 문제" 버튼 노출, 없으면 바로 결과 표시
-                if (step < questions.length - 1) {
-                    nextBtn.style.display = 'inline-block';
+                currentQuiz = data.quiz;
+                const q = data.quiz;
+                if (q.quizType === '객관식') {
+                    const options = [q.quizOption1, q.quizOption2, q.quizOption3, q.quizOption4]
+                        .map((opt, i) => (opt ? `${i + 1}) ${opt}` : null))
+                        .filter(Boolean)
+                        .join('\n');
+                    addBotMessage(`Q. ${q.quizContent}\n${options}\n정답 번호를 채팅창에 입력해주세요!`);
                 } else {
-                    finishQuiz();
+                    addBotMessage(`Q. ${q.quizContent}\nO 또는 X로 답해주세요!`);
                 }
+                setAnswering(true);
+            })
+            .catch((err) => {
+                addBotMessage(err.message === 'unauthorized' ? '로그인 후 이용할 수 있어요.' : '문제를 불러오지 못했어요. 잠시 후 다시 시도해주세요.');
             });
-            optionsBox.appendChild(btn);
-        });
     }
 
-    // 퀴즈 종료 처리: 횟수 차감 + 결과 문구 표시
-    function finishQuiz() {
-        const left = qnaQuizUseAttempt();
-        playBox.style.display = 'none';
-        resultBox.style.display = 'block';
-        resultBox.textContent = `✅ 2문제 중 ${correctCount}문제를 맞히셨어요! (오늘 남은 횟수 ${left}/${QNA_QUIZ_DAILY_LIMIT})`;
-        renderCount();
+    // 채팅창에 입력한 답을 제출하고, 채점 결과를 다시 챗봇 메시지로 표시
+    function submitAnswer() {
+        const answer = answerInput.value.trim();
+        if (!answer || !currentQuiz) return;
+        addUserMessage(answer);
+        answerInput.value = '';
+        setAnswering(false);
+
+        fetch('/api/quiz/answer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ quizId: currentQuiz.quizId, answer }),
+        })
+            .then((res) => {
+                if (!res.ok) throw new Error('answer submit failed');
+                return res.json();
+            })
+            .then((data) => {
+                currentQuiz = null;
+                const feedback = data.correct
+                    ? `✅ 정답이에요! ${data.pointsAwarded}P를 적립했어요.`
+                    : '❌ 아쉽지만 오답이에요.';
+                addBotMessage(data.explanation ? `${feedback}\n${data.explanation}` : feedback);
+                renderCount(data.remainingAttempts);
+            })
+            .catch(() => {
+                addBotMessage('채점 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.');
+            });
     }
 
-    // [퀴즈 시작] 버튼 클릭 -> 문제 은행에서 객관식 1 + OX 1을 랜덤으로 뽑아 시작
-    startBtn.addEventListener('click', () => {
-        if (qnaQuizAttemptsLeft() <= 0) return; // 남은 횟수 없으면 무시
-        questions = [
-            Object.assign({ type: 'mc' }, qnaQuizPickRandom(QNA_QUIZ_QUESTION_BANK.mc)),
-            Object.assign({ type: 'ox' }, qnaQuizPickRandom(QNA_QUIZ_QUESTION_BANK.ox)),
-        ];
-        step = 0;
-        correctCount = 0;
-        resultBox.style.display = 'none';
-        playBox.style.display = 'block';
-        renderQuestion();
+    startBtn.addEventListener('click', startQuiz);
+    answerSendBtn.addEventListener('click', submitAnswer);
+    answerInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') submitAnswer();
     });
 
-    // [다음 문제] 버튼 클릭 -> step 증가시키고 다음 문제 렌더링
-    nextBtn.addEventListener('click', () => {
-        step += 1;
-        renderQuestion();
-    });
+    setAnswering(false);
 
-    renderCount(); // 페이지 로드 시 최초 1회 남은 횟수 표시
-}
-
-// ---- 방장(평론가) 퇴장 시 채팅방 삭제 경고 (확인창 -> 확인 누르면 삭제 알림) ----
-function confirmRoomLeave() {
-    const ok = confirm(
-        "방장이 퇴장하면 채팅방이 삭제되고 대화 내용이 모두 사라집니다.\n정말 퇴장하시겠습니까?"
-    );
-    if (ok) {
-        alert("채팅방이 삭제되었습니다. (데모)");
-    }
+    // 페이지 로드 시 남은 횟수만 먼저 조회해서 표시(비로그인 상태면 401이라 조용히 무시)
+    fetch('/api/quiz/random')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+            if (data) renderCount(data.remainingAttempts);
+        })
+        .catch(() => {});
 }
 
 // ---- 채팅방: 방장(평론가/관리자)이 채팅 내에서 특정 사용자에게 경고를 부여 ----
@@ -258,33 +239,6 @@ function giveChatWarning() {
     msg.textContent = `⚠ ${name.trim()}님 경고 1회`;
     messages.appendChild(msg);
     messages.scrollTop = messages.scrollHeight; // 스크롤을 맨 아래로 이동
-}
-
-// ---- 퀴즈 인터랙션 (챗봇 패널의 정적 HTML 예시용 - qna 퀴즈와는 별개의 구버전 로직) ----
-function initQuiz() {
-    document.querySelectorAll(".quiz-options button").forEach((btn) => {
-        btn.addEventListener("click", () => {
-            const options = btn.parentElement.querySelectorAll("button");
-            const isCorrect = btn.dataset.correct === "true";
-            options.forEach((o) => (o.disabled = true));
-            btn.classList.add(isCorrect ? "correct" : "wrong");
-            if (!isCorrect) {
-                const correctBtn = Array.from(options).find((o) => o.dataset.correct === "true");
-                correctBtn && correctBtn.classList.add("correct");
-            }
-        });
-    });
-}
-
-// ---- 퀴즈 시작 버튼 (챗봇 패널의 정적 HTML 예시용 - 위 initQuiz와 짝) ----
-function initQuizStart() {
-    const startBtn = document.getElementById("quizStartBtn");
-    const options = document.getElementById("quizOptions");
-    if (!startBtn || !options) return;
-    startBtn.addEventListener("click", () => {
-        options.style.display = "grid";
-        startBtn.disabled = true;
-    });
 }
 
 // ==========================================================================
@@ -325,14 +279,20 @@ function renderChatroomList(rooms) {
         // 방 이름 / 인원수 / 입장 버튼을 문자열 템플릿으로 한번에 삽입
         // ★ data-room-id 뿐 아니라 data-room-title도 함께 심어둠
         //   -> 나중에 입장 버튼을 눌렀을 때 방 제목을 채팅창 상단에 그대로 반영하기 위함.
+        // ★ joined: 로그인 회원이 이미 참여 중인 방이면 '참여중'으로 표시
+        const isJoined = room.joined === true;
+        const btnLabel = isJoined ? "참여중" : "입장";
+        const btnClass = isJoined ? "btn btn-sm btn-joined" : "btn btn-primary btn-sm";
+
         item.innerHTML = `
       <div>
         <div class="room-name">${room.chatroomTitle}</div>
         <div class="room-count">${room.currentMemberCount ?? 0} / ${room.chatroomMaxMember}명</div>
       </div>
-      <button class="btn btn-primary btn-sm"
+      <button class="${btnClass}"
               data-room-id="${room.chatroomId}"
-              data-room-title="${room.chatroomTitle}">입장</button>
+              data-room-title="${room.chatroomTitle}"
+              data-joined="${isJoined}">${btnLabel}</button>
     `;
 
         listContainer.appendChild(item);
@@ -435,10 +395,20 @@ function initChatroomChat() {
             const btn = e.target.closest("button[data-room-id]");
             if (!btn) return; // 입장 버튼이 아닌 다른 곳을 클릭한 경우 무시
 
-            const chatroomId = btn.dataset.roomId;       
-            const chatroomTitle = btn.dataset.roomTitle;  
+            const chatroomId = btn.dataset.roomId;
+            const chatroomTitle = btn.dataset.roomTitle;
+            const alreadyJoined = btn.dataset.joined === "true";
 
-            enterChatroom(chatroomId, chatroomTitle);
+            if (alreadyJoined) {
+                // 이미 참여 중인 방이면 서버에 재입장 요청을 보내지 않고 바로 채팅 탭으로 이동
+                currentChatroomId = chatroomId;
+                const chatTab = document.querySelector('[data-tab-target="chat"]');
+                if (chatTab) chatTab.click();
+                const titleEl = document.getElementById("chatroomTitleText");
+                if (titleEl) titleEl.textContent = `💬 ${chatroomTitle}`;
+            } else {
+                enterChatroom(chatroomId, chatroomTitle);
+            }
         });
     }
 
@@ -514,6 +484,7 @@ function initChatroomChat() {
  * - 1. 백엔드 서버로 POST 요청을 보내 DB(chat_member)에 입장 정보 저장
  * - 2. 채팅 탭으로 화면 전환 및 상단 타이틀 변경
  * - 3. 화면 채팅창에 'OO님이 입장했습니다' 시스템 메시지 추가
+ * - 4. 나가기 버튼이 사용할 수 있도록 현재 방 ID를 currentChatroomId에 저장
  */
 async function enterChatroom(chatroomId, chatroomTitle) {
     if (!chatroomId) {
@@ -541,6 +512,12 @@ async function enterChatroom(chatroomId, chatroomTitle) {
         return;
     }
 
+    // ★ 입장에 성공했으므로 현재 방 ID를 기억해둔다 (나가기 버튼에서 사용)
+    currentChatroomId = chatroomId;
+
+    // ★ 목록 화면의 "입장" 버튼이 "참여중"으로 바뀌도록, 목록도 최신 상태로 다시 받아온다
+    loadChatroomList();
+
     // 2. 채팅방 패널 안의 [채팅] 탭 버튼을 찾아 자동으로 클릭(화면 전환)
     const chatTab = document.querySelector('[data-tab-target="chat"]');
     if (chatTab) {
@@ -565,64 +542,98 @@ async function enterChatroom(chatroomId, chatroomTitle) {
         messages.appendChild(joinMsg);
         messages.scrollTop = messages.scrollHeight;
     }
-
-    console.log("성공적으로 입장한 채팅방 ID:", chatroomId, "/ 제목:", chatroomTitle);
 }
-// 케밥 메뉴 열기/닫기
-const chatroomMenuBtn = document.getElementById('chatroomMenuBtn');
-const chatroomDropdown = document.getElementById('chatroomDropdown');
-if (chatroomMenuBtn && chatroomDropdown) {
-  chatroomMenuBtn.addEventListener('click', function (e) {
-    e.stopPropagation();
-    chatroomDropdown.classList.toggle('open');
-  });
-  // 메뉴 바깥 클릭 시 닫기
-  document.addEventListener('click', function (e) {
-    if (!chatroomDropdown.contains(e.target) && e.target !== chatroomMenuBtn) {
-      chatroomDropdown.classList.remove('open');
+
+/**
+ * ★★★ 채팅방 "나가기" 버튼을 눌렀을 때 실제로 실행되는 함수 ★★★
+ * - 1. currentChatroomId가 없으면(아직 어느 방에도 안 들어간 상태) 그냥 종료
+ * - 2. 서버에 나가기 요청(POST /api/chatroom/{id}/leave) 전송 (DB chat_member 삭제 등)
+ * - 3. [목록] 탭으로 화면 전환, 채팅 상단 타이틀/메시지창 초기화
+ * - 4. 목록을 새로고침해서 인원 수 반영
+ */
+async function leaveChatroom() {
+    if (!currentChatroomId) {
+        alert("입장한 채팅방이 없습니다.");
+        return;
     }
-  });
-  // 메뉴 안 토글 스위치 클릭 시엔 메뉴가 안 닫히도록
-  chatroomDropdown.querySelector('.toggle-item').addEventListener('click', function (e) {
-    e.stopPropagation();
-  });
-}
+    if (!confirm("채팅방에서 나가시겠습니까?")) return;
 
-// 알림 켜기/끄기
-const chatroomNotifyToggle = document.getElementById('chatroomNotifyToggle');
-if (chatroomNotifyToggle) {
-  chatroomNotifyToggle.addEventListener('change', function () {
-    const isOn = this.checked;
-    fetch('/chatroom/notify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ notifyOn: isOn })
-    }).catch(err => console.error('알림 설정 저장 실패:', err));
-  });
-}
+    try {
+        const response = await fetch(`/api/chatroom/${currentChatroomId}/leave`, {
+            method: 'POST'
+        });
 
-// 채팅방 나가기 버튼
-const chatroomLeaveBtn = document.getElementById('chatroomLeaveBtn');
-if (chatroomLeaveBtn) {
-  chatroomLeaveBtn.addEventListener('click', function () {
-    if (chatroomDropdown) chatroomDropdown.classList.remove('open');
-    if (!confirm('채팅방에서 나가시겠습니까?')) return;
-
-    // 입장 시 저장해둔 현재 방 ID 사용 (예: chatroomPanel.dataset.currentRoomId)
-    const roomId = document.getElementById('chatroomPanel').dataset.currentRoomId;
-
-    fetch(`/chatroom/${roomId}/leave`, { method: 'POST' })
-      .then(res => {
-        if (res.ok) {
-          alert('채팅방에서 나갔습니다.');
-          document.querySelector('[data-tab-target="list"]').click(); // 목록 탭으로 이동
-        } else {
-          alert('나가기에 실패했습니다.');
+        if (!response.ok) {
+            const errorText = await response.text();
+            alert(errorText || "나가기에 실패했습니다.");
+            return;
         }
-      })
-      .catch(err => console.error('나가기 요청 실패:', err));
-  });
+    } catch (error) {
+        console.error("나가기 요청 실패:", error);
+        alert("서버 연결에 실패했습니다. 네트워크 상태를 확인하세요.");
+        return;
+    }
+
+    // 상태 초기화
+    currentChatroomId = null;
+
+    // 채팅 메시지창, 타이틀 초기화
+    const messages = document.getElementById("chatroomMessages");
+    if (messages) messages.innerHTML = "";
+    const titleEl = document.getElementById("chatroomTitleText");
+    if (titleEl) titleEl.textContent = "💬 ";
+
+    // [목록] 탭으로 이동
+    const listTabButton = document.querySelector("[data-tab-target='list']");
+    if (listTabButton) listTabButton.click();
+
+    // 목록 최신화 (인원수 갱신)
+    loadChatroomList();
 }
+
+/**
+ * 채팅방 상단 케밥(⋮) 메뉴 및 알림 토글 / 나가기 버튼 초기화
+ */
+function initChatroomMenu() {
+    const chatroomMenuBtn = document.getElementById('chatroomMenuBtn');
+    const chatroomDropdown = document.getElementById('chatroomDropdown');
+    const chatroomNotifyToggle = document.getElementById('chatroomNotifyToggle');
+    const chatroomLeaveBtn = document.getElementById('chatroomLeaveBtn');
+
+    if (chatroomMenuBtn && chatroomDropdown) {
+        // 케밥 버튼 클릭 -> 드롭다운 열기/닫기 토글
+        chatroomMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            chatroomDropdown.classList.toggle('open');
+        });
+        // 드롭다운 바깥을 클릭하면 닫기
+        document.addEventListener('click', (e) => {
+            if (!chatroomDropdown.contains(e.target) && e.target !== chatroomMenuBtn) {
+                chatroomDropdown.classList.remove('open');
+            }
+        });
+    }
+
+    // 알림 켜기/끄기
+    if (chatroomNotifyToggle) {
+        chatroomNotifyToggle.addEventListener('change', function () {
+            fetch('/chatroom/notify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ notifyOn: this.checked })
+            }).catch((err) => console.error('알림 설정 저장 실패:', err));
+        });
+    }
+
+    // 채팅방 나가기 버튼
+    if (chatroomLeaveBtn) {
+        chatroomLeaveBtn.addEventListener('click', () => {
+            if (chatroomDropdown) chatroomDropdown.classList.remove('open');
+            leaveChatroom();
+        });
+    }
+}
+
 // ---- 취향/장르 선택 칩 (클릭 시 선택 표시 토글) ----
 function initGenreChips() {
     document.querySelectorAll(".genre-chip").forEach((chip) => {
@@ -726,9 +737,8 @@ document.addEventListener("DOMContentLoaded", () => {
     initTabs(".platform-tabs");
     initTabs(".notice-tabs");
 
-    initQuiz();
-    initQuizStart();
-    initChatroomChat();   
+    initChatroomChat();
+    initChatroomMenu();   // 케밥 메뉴 및 나가기 기능 초기화
     initGenreChips();
     initQnaChatbotQuiz();
 });
@@ -740,7 +750,7 @@ const headings = document.querySelectorAll('.section-heading');
 const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
-            void entry.target.offsetWidth; 
+            void entry.target.offsetWidth;
             entry.target.style.animation = 'heading-shine 4s ease-in-out infinite, heading-fade-in 0.6s ease-out';
         }
     });
@@ -749,6 +759,9 @@ const observer = new IntersectionObserver((entries) => {
 headings.forEach(h => observer.observe(h));
 
 // ---- 푸터: 맨 위로 가기 버튼 ----
-document.getElementById("footerTopBtn").addEventListener("click", function() {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-});
+const footerTopBtn = document.getElementById("footerTopBtn");
+if (footerTopBtn) {
+    footerTopBtn.addEventListener("click", function() {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+}
