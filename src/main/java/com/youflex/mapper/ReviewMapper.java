@@ -60,4 +60,8 @@ public interface ReviewMapper {
 	// 갱신되는 조건부 UPDATE라서, 영향받은 행 수(1이면 갱신 성공=신규 마일스톤 도달, 0이면 이미 지급됨)로
 	// 포인트 지급 여부를 판단한다(좋아요 취소->재좋아요 반복으로 인한 중복 지급 방지).
 	int updateRewardedLikeCount(@Param("reviewId") int reviewId, @Param("milestone") int milestone);
+
+	// 마이페이지 포인트 상점 - 게시글 하이라이트 적용. durationDays일간 노출되도록 시작/만료 시각을 설정.
+	// (만료 후 자동 해제 배치는 별도 구현 필요 - 지금은 켜는 것까지만 처리)
+	void highlightReview(@Param("reviewId") int reviewId, @Param("durationDays") int durationDays);
 }
