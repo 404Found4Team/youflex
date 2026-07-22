@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.youflex.dto.MemberDTO;
 import com.youflex.dto.PageInfo;
 import com.youflex.dto.PointHistoryDTO;
 import com.youflex.mapper.MemberMapper;
@@ -31,6 +32,24 @@ public class PointService {
                 .memberId(memberId)
                 .pointHistoryAmount(amount)
                 .pointHistoryType("적립")
+                .pointHistoryReason(reason)
+                .build());
+    }
+
+    // 포인트 사용(차감) - 보유 포인트가 amount 미만이면 차단(MemberMapper.addPoint는 잔액 체크가 없어서
+    // 여기서 미리 검증하지 않으면 마이너스 포인트가 될 수 있음). 검증 통과 시 member.member_point 감소 +
+    // point_history에 '사용' 이력 기록을 한 트랜잭션으로 처리(경고 차감권/하이라이트 등 포인트 상점 공용).
+    @Transactional
+    public void usePoints(int memberId, int amount, String reason) {
+        MemberDTO member = memberMapper.findById(memberId);
+        if (member.getMemberPoint() < amount) {
+            throw new IllegalStateException("포인트가 부족합니다.");
+        }
+        memberMapper.addPoint(memberId, -amount);
+        pointHistoryMapper.insertPointHistory(PointHistoryDTO.builder()
+                .memberId(memberId)
+                .pointHistoryAmount(amount)
+                .pointHistoryType("사용")
                 .pointHistoryReason(reason)
                 .build());
     }

@@ -24,5 +24,15 @@
 		FROM member -- 회원 테이블명
 		WHERE member_id = #{memberId}
 	</select>
-
+	<!-- ★ 경고 부여용: 특정 메시지 단건 조회 (작성자/방 확인) -->
+	<select id="selectChatMessageById" resultType="com.youflex.dto.ChatMessageDTO">
+		SELECT
+			chat_message_id AS chatMessageId,
+			chatroom_id AS chatroomId,
+			member_id AS memberId,
+			chat_message_content AS chatMessageContent,
+			chat_message_created_at AS chatMessageCreatedAt
+		FROM chat_message
+		WHERE chat_message_id = #{chatMessageId}
+	</select>
 </mapper>

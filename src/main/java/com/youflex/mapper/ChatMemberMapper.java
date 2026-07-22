@@ -35,4 +35,20 @@ public interface ChatMemberMapper {
     
  // ChatMemberMapper.java (인터페이스)
     Integer selectActiveChatroomIdByMemberId(int memberId); // Integer로 변경
+
+	int countMembersInChatroom(int chatroomId);
+
+    /**
+     * 특정 회원의 채팅방 참여 상태를 '강퇴'로 변경 (물리 삭제 대신 소프트 처리)
+     * - 경고 누적으로 강제퇴장 시 사용
+     */
+    int updateStatusToKicked(@Param("chatroomId") int chatroomId,
+                              @Param("memberId") int memberId);
+
+    /**
+     * 특정 회원이 해당 채팅방에서 강퇴당한 이력이 있는지 확인
+     * @return 강퇴 이력이 있으면 1 이상, 없으면 0
+     */
+    int isKickedFromChatroom(@Param("chatroomId") int chatroomId,
+                              @Param("memberId") int memberId);
 }

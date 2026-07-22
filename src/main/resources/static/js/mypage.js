@@ -43,6 +43,134 @@ if (rankUpBtn) {
   });
 }
 
+// 경고 1회 차감권 구매 - 포인트 10000점을 소진해서 유효 경고 1건을 차감(포인트차감취소)
+// (차감할 유효 경고가 없거나 포인트가 부족하면 서버가 400과 함께 구체적인 사유를 내려줌)
+const warningRevokeBtn = document.getElementById('warningRevokeBtn');
+if (warningRevokeBtn) {
+  warningRevokeBtn.addEventListener('click', () => {
+    if (!confirm('포인트 10,000점을 사용해 경고 1회를 차감하시겠습니까?')) return;
+    fetch('/mypage/warning/revoke', { method: 'POST' })
+      .then((res) => {
+        if (res.ok) {
+          alert('경고 1회가 차감되었습니다.');
+          location.reload(); // 프로필 카드의 경고 횟수/포인트는 서버 렌더링 값이라 새로고침으로 갱신
+          return;
+        }
+        return res.text().then((message) => {
+          alert(message || '경고 차감 중 오류가 발생했습니다.');
+        });
+      })
+      .catch(() => {
+        alert('경고 차감 중 오류가 발생했습니다.');
+      });
+  });
+}
+
+// 게시글 하이라이트 이용권 구매 - 모달을 열어 본인 게시글 중 하나를 고르게 하고, 확인을 누르면
+// 포인트 1000점을 소진해서 review_highlighted를 'Y'로 전환(7일간 노출, /mypage/reviews를 재사용해 목록을 채움)
+const highlightBuyBtn = document.getElementById('highlightBuyBtn');
+const highlightModalBackdrop = document.getElementById('highlightModalBackdrop');
+const highlightPostList = document.getElementById('highlightPostList');
+const highlightPostPagination = document.getElementById('highlightPostPagination');
+const highlightConfirmBtn = document.getElementById('highlightConfirmBtn');
+const highlightCancelBtn = document.getElementById('highlightCancelBtn');
+let selectedHighlightReviewId = null;
+
+// 게시글 한 건을 post-row로 그려주되, "내 글" 탭과 달리 클릭 시 상세 이동 대신 선택 상태만 토글
+function renderHighlightPostRow(review) {
+  const row = document.createElement('div');
+  row.className = 'post-row' + (review.reviewId === selectedHighlightReviewId ? ' selected' : '');
+  row.addEventListener('click', () => {
+    selectedHighlightReviewId = review.reviewId;
+    highlightPostList.querySelectorAll('.post-row').forEach((el) => el.classList.remove('selected'));
+    row.classList.add('selected');
+  });
+
+  const thumb = document.createElement('div');
+  thumb.className = 'post-row-thumb';
+  if (review.reviewImg) {
+    const img = document.createElement('img');
+    img.src = '/upload/' + review.reviewImg;
+    img.className = 'post-img';
+    thumb.appendChild(img);
+  }
+  row.appendChild(thumb);
+
+  const body = document.createElement('div');
+  const title = document.createElement('div');
+  title.className = 'post-row-title';
+  title.textContent = review.reviewTitle;
+  body.appendChild(title);
+  if (review.reviewHighlighted === 'Y') {
+    const sub = document.createElement('div');
+    sub.className = 'post-row-sub';
+    sub.textContent = '이미 하이라이트 중';
+    body.appendChild(sub);
+  }
+  row.appendChild(body);
+
+  return row;
+}
+
+function loadHighlightPosts(page) {
+  fetch(`/mypage/reviews?page=${page}`)
+    .then((res) => {
+      if (!res.ok) throw new Error('my posts request failed');
+      return res.json();
+    })
+    .then((data) => {
+      highlightPostList.innerHTML = '';
+      if (!data.reviews.length) {
+        highlightPostList.innerHTML = '<div class="text-muted" style="text-align:center;padding:24px 0">작성한 글이 없습니다.</div>';
+      } else {
+        data.reviews.forEach((review) => highlightPostList.appendChild(renderHighlightPostRow(review)));
+      }
+      renderPagination(highlightPostPagination, data.totalPages, data.page, loadHighlightPosts);
+    })
+    .catch(() => {
+      highlightPostList.innerHTML = '<div class="text-muted" style="text-align:center;padding:24px 0">내 글을 불러오지 못했습니다.</div>';
+    });
+}
+
+if (highlightBuyBtn) {
+  highlightBuyBtn.addEventListener('click', () => {
+    selectedHighlightReviewId = null;
+    loadHighlightPosts(1);
+    highlightModalBackdrop.classList.add('open');
+  });
+
+  highlightCancelBtn.addEventListener('click', () => {
+    highlightModalBackdrop.classList.remove('open');
+  });
+
+  highlightConfirmBtn.addEventListener('click', () => {
+    if (!selectedHighlightReviewId) {
+      alert('하이라이트할 게시글을 선택해주세요.');
+      return;
+    }
+    if (!confirm('포인트 1,000점을 사용해 이 게시글을 7일간 하이라이트하시겠습니까?')) return;
+    fetch('/mypage/highlight', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'reviewId=' + encodeURIComponent(selectedHighlightReviewId),
+    })
+      .then((res) => {
+        if (res.ok) {
+          alert('게시글이 하이라이트되었습니다.');
+          highlightModalBackdrop.classList.remove('open');
+          location.reload(); // 프로필 카드의 포인트는 서버 렌더링 값이라 새로고침으로 갱신
+          return;
+        }
+        return res.text().then((message) => {
+          alert(message || '하이라이트 적용 중 오류가 발생했습니다.');
+        });
+      })
+      .catch(() => {
+        alert('하이라이트 적용 중 오류가 발생했습니다.');
+      });
+  });
+}
+
 // 취향(관심 장르) 선택 - 서버가 th:classappend로 미리 체크해둔 상태(selected)를 기준으로
 // 최대 3개까지 토글하고, "완료" 클릭 시 실제 선택 상태로 DB를 교체 저장(join.js의 방식과 동일)
 const genreGrid = document.getElementById('genreGrid');
