@@ -32,10 +32,7 @@ import com.youflex.dto.GenreCategoryDTO;
 import com.youflex.dto.MemberDTO;
 import com.youflex.dto.ReviewDTO;
 import com.youflex.exception.BadWordDetectedException;
-<<<<<<< HEAD
-=======
 import com.youflex.exception.ReviewNotFoundException;
->>>>>>> main
 import com.youflex.service.BadWordService;
 import com.youflex.service.CommentService;
 import com.youflex.service.GenreCategoryService;

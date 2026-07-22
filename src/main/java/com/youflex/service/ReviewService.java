@@ -86,13 +86,6 @@ public class ReviewService {
 		return review;
 	}
 	
-<<<<<<< HEAD
-//	4) 게시글 수정
-	public void update(ReviewDTO reviewDTO) {
-		// 금칙어가 포함되어 있으면 수정 등록도 막음 (필터 우회 방지, 제목/본문 모두 검사)
-		badWordService.validateContent(reviewDTO.getReviewTitle());
-		badWordService.validateContent(reviewDTO.getReviewContent());
-=======
 //	4) 게시글 수정 - 작성자 본인만 가능, 새 이미지 미첨부 시 기존 이미지 유지, 장르는 전체 삭제 후 재삽입
 	@Transactional
 	public void update(ReviewDTO reviewDTO, List<Integer> genreCategoryIds, int requesterMemberId) {
@@ -111,7 +104,6 @@ public class ReviewService {
 		if (reviewDTO.getReviewImg() == null) {
 			reviewDTO.setReviewImg(existing.getReviewImg());
 		}
->>>>>>> main
 		reviewMapper.update(reviewDTO);
 
 		// 장르는 전체 삭제 후, 이번에 새로 선택한 장르만 다시 저장
