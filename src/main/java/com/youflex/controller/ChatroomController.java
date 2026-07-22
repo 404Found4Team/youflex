@@ -49,6 +49,10 @@ public class ChatroomController {
      * ★ 프론트(app.js)가 응답을 그대로 chatroomId(숫자)로 사용하므로
      *   객체가 아니라 생성된 chatroomId만 반환한다.
      */
+    /**
+     * 채팅방 생성
+     * ★ 프론트(app.js)가 응답을 받아 바로 입장할 수 있도록 생성된 chatroomId(숫자)를 반환한다.
+     */
     @PostMapping
     public ResponseEntity<?> createChatroom(@RequestBody ChatroomDTO chatroom, HttpSession session) {
         Integer memberId = getLoginMemberId(session);
@@ -63,11 +67,11 @@ public class ChatroomController {
         chatroom.setMemberId(memberId);
         
         try {
-            // Service 실행 (방 생성 + 방장 등록)
-            chatroomService.createChatroom(chatroom);
+            // Service 실행 (방 생성 + 방장 등록) 및 생성된 PK(chatroomId) 반환 받기
+            int chatroomId = chatroomService.createChatroom(chatroom);
             
-            // ★ 수정 포인트: 숫자가 아니라 텍스트 응답을 보내어 프론트의 response.text()와 맞춤
-            return ResponseEntity.status(HttpStatus.CREATED).body("채팅방이 성공적으로 개설되었습니다.");
+            // ★ 수정 포인트: 텍스트가 아니라 방금 만들어진 방의 ID(숫자)를 반환합니다.
+            return ResponseEntity.status(HttpStatus.CREATED).body(chatroomId);
             
         } catch (IllegalStateException e) {
             // 중복된 제목일 경우 프론트로 409 상태와 에러 메시지 전송
@@ -78,14 +82,6 @@ public class ChatroomController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("채팅방 생성에 실패했습니다.");
         }
     }
-    /** 전체 채팅방 목록 조회 (GET /api/chatroom) */
-    @GetMapping
-    public ResponseEntity<List<ChatroomDTO>> getAllChatrooms(HttpSession session) {
-        Integer memberId = getLoginMemberId(session); // 비로그인 시 null
-        List<ChatroomDTO> list = chatroomService.getAllChatrooms(memberId);
-        return ResponseEntity.ok(list);
-    }
-
     /** 채팅방 단건 조회 */
     @GetMapping("/{chatroomId}")
     public ResponseEntity<?> getChatroom(@PathVariable("chatroomId") int chatroomId) {
