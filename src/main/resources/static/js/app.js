@@ -319,7 +319,11 @@ function sendChatMessage() {
  *     기존에는 이 속성이 없어서 이벤트 위임 로직의 alreadyJoined 판정이 항상 false가 되어
  *     참여 중인 방인데도 switchToChatroom 대신 enterChatroom(재입장 API)이 호출되고 있었음.
  */
+/*
+==================  서버에서 받은 채팅방 목록(rooms)을 화면에 그려주는(렌더링하는) 로직  ===================
+*/
 function renderChatroomList(rooms) {
+    // 채팅방 목록을 표시할 영역 찾기
     const listContainer = document.getElementById("chatroomListContainer");
     if (!listContainer) return;
 
