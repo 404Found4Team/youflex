@@ -598,11 +598,14 @@ function connectChatroom(chatroomId) {
 
 // 개별 방 구독 전용 함수
 function subscribeChatroom(chatroomId) {
-    // 중복 구독을 방지하려면 기존 구독 객체를 관리하는 처리가 필요할 수 있습니다.
+    if (!currentStompClient || !currentStompClient.connected) {
+        console.warn("STOMP 연결이 준비되지 않았습니다.");
+        return;
+    }
+
     currentStompClient.subscribe(`/sub/chatroom/${chatroomId}`, (message) => {
         const chatMessage = JSON.parse(message.body);
-        // 화면에 메시지를 그려주는 함수 호출 (예: appendMessageToUI)
-        appendMessageToUI(chatMessage);
+        appendChatMessage(chatMessage);
     });
 }
 
@@ -759,11 +762,12 @@ async function enterChatroom(chatroomId, chatroomTitle) {
             // ★ 409 Conflict (이미 참여 중인 방이 있는 경우) 처리
             if (response.status === 409) {
                 const roomName = errorData.existingRoomTitle || "기존 방";
+                const existingRoomId = errorData.existingRoomId || null;
                 alert(`회원당 한 곳의 채팅방만 이용 가능합니다.\n이미 참여 중인 채팅방 [${roomName}]으로 이동합니다.`);
 
-                if (errorData.activeChatroomId && errorData.activeChatroomId > 0) {
+                if (existingRoomId && existingRoomId > 0) {
                     loadChatroomList();
-                    switchToChatroom(errorData.activeChatroomId, roomName);
+                    switchToChatroom(existingRoomId, roomName);
                 }
                 return;
             }

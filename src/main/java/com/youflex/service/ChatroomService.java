@@ -7,6 +7,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.youflex.dto.ChatMessageDTO;
 import com.youflex.dto.ChatroomDTO;
@@ -44,6 +45,7 @@ public class ChatroomService {
      * 채팅방 생성 후 생성된 chatroomId 반환
      * - 개설자를 chat_member에 "방장" / "참여중" 상태로 함께 등록한다.
      */
+    @Transactional
     public int createChatroom(ChatroomDTO chatroom) {
         try {
             // DB에 UNIQUE 제약조건이 걸려있으므로, 중복 제목이면 여기서 에러가 발생합니다.
@@ -77,6 +79,7 @@ public class ChatroomService {
      * 채팅방 삭제
      * - chat_member는 FK ON DELETE CASCADE로도 정리되지만, 명시적으로 먼저 비워서 안전하게 처리
      */
+    @Transactional
     public int deleteChatroom(int chatroomId) {
         chatMemberMapper.deleteAllChatMembersByChatroomId(chatroomId);
         return chatroomMapper.deleteChatroom(chatroomId);
@@ -132,6 +135,7 @@ public class ChatroomService {
      * - 참여자가 나가면: chat_member 기록만 삭제
      * - 방장이 나가면: 채팅방 자체를 삭제 (모든 참여자 강제 퇴장)
      */
+    @Transactional
     public void leaveChatroom(int chatroomId, int memberId) {
         // 1. 나가려는 사람의 역할 확인
         String role = chatMemberMapper.selectChatMemberRole(chatroomId, memberId);

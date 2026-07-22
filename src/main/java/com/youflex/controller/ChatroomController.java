@@ -82,6 +82,13 @@ public class ChatroomController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("채팅방 생성에 실패했습니다.");
         }
     }
+    /** 채팅방 목록 조회 */
+    @GetMapping
+    public ResponseEntity<?> getAllChatrooms(HttpSession session) {
+        Integer memberId = getLoginMemberId(session);
+        return ResponseEntity.ok(chatroomService.getAllChatrooms(memberId));
+    }
+
     /** 채팅방 단건 조회 */
     @GetMapping("/{chatroomId}")
     public ResponseEntity<?> getChatroom(@PathVariable("chatroomId") int chatroomId) {
@@ -96,7 +103,6 @@ public class ChatroomController {
     @PostMapping("/{chatroomId}/enter")
     public ResponseEntity<?> enterChatroom(@PathVariable("chatroomId") int chatroomId, HttpSession session) {
         Integer memberId = getLoginMemberId(session);
-        System.out.println(">>> [디버깅] 현재 로그인한 회원 ID: " + memberId);
 
         if (memberId == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
@@ -136,8 +142,23 @@ public class ChatroomController {
 
     /** 채팅방 정보 수정 */
     @PutMapping("/{chatroomId}")
-    public ResponseEntity<?> updateChatroom(@PathVariable("chatroomId") int chatroomId, @RequestBody ChatroomDTO chatroom) {
+    public ResponseEntity<?> updateChatroom(@PathVariable("chatroomId") int chatroomId,
+            @RequestBody ChatroomDTO chatroom, HttpSession session) {
+        Integer memberId = getLoginMemberId(session);
+        if (memberId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
+        }
+
+        ChatroomDTO existingChatroom = chatroomService.getChatroom(chatroomId);
+        if (existingChatroom == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("존재하지 않는 채팅방입니다.");
+        }
+        if (existingChatroom.getMemberId() != memberId) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("방장만 채팅방 정보를 수정할 수 있습니다.");
+        }
+
         chatroom.setChatroomId(chatroomId);
+        chatroom.setMemberId(memberId);
         int result = chatroomService.updateChatroom(chatroom);
         if (result > 0) {
             return ResponseEntity.ok(chatroom);
@@ -147,7 +168,20 @@ public class ChatroomController {
 
     /** 채팅방 삭제 */
     @DeleteMapping("/{chatroomId}")
-    public ResponseEntity<?> deleteChatroom(@PathVariable("chatroomId") int chatroomId) {
+    public ResponseEntity<?> deleteChatroom(@PathVariable("chatroomId") int chatroomId, HttpSession session) {
+        Integer memberId = getLoginMemberId(session);
+        if (memberId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
+        }
+
+        ChatroomDTO existingChatroom = chatroomService.getChatroom(chatroomId);
+        if (existingChatroom == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("존재하지 않는 채팅방입니다.");
+        }
+        if (existingChatroom.getMemberId() != memberId) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("방장만 채팅방을 삭제할 수 있습니다.");
+        }
+
         int result = chatroomService.deleteChatroom(chatroomId);
         if (result > 0) {
             return ResponseEntity.noContent().build();
