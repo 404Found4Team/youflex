@@ -17,38 +17,36 @@
 	<!-- 네비게이션 바 영역 -->
 	<nav class="category-nav" th:replace="~{fragments/layout :: nav}"></nav>
 
-	<!-- 
-  ================================
-  메인 영역
-  ================================
--->
+	<!-- 메인 영역 -->
 	<main class="container">
+
+		<!-- 상단 고정 공지사항 -->
 		<div class="post-row-list mt-16">
-			<a class="post-row" href="06_notice_detail.html" style="background:var(--bg-2)">
+			<a class="post-row" th:href="@{/notice/detail(id=1)}" href="06_notice_detail.html"
+				style="background:var(--bg-2)">
 				<div class="post-row-thumb"
-					style="display:flex;align-items:center;justify-content:center;background:transparent">
+					style="width:50px; height:50px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
 					<span class="badge badge-admin">공지</span>
 				</div>
-				<div>
-					<div class="post-row-title">[공지] 비속어 필터링 정책 및 경고 제도 안내</div>
-					<div class="post-row-sub">공지사항 · 운영자</div>
+				<div style="flex: 1; margin-left: 16px;">
+					<div class="post-row-title" style="font-weight: 600;">[공지] 비속어 필터링 정책 및 경고 제도 안내</div>
 				</div>
-				<div class="post-row-right"></div> <!--'상단고정' 텍스트 제거 완료-->
+				<div class="post-row-right text-muted" style="font-size:13px;">운영자</div>
 			</a>
 		</div>
 
+		<!-- 정렬 및 글쓰기 툴바 -->
 		<div class="list-toolbar mt-16">
 			<div class="sort-group">
 				<button class="active">최신순</button>
 				<button>좋아요순</button>
-				<button>하이라이트</button>
+				<button>별점순</button>
 				<button>조회수순</button>
 			</div>
 
 			<div class="write-btn-wrap" data-role-visible="user,critic,admin" style="margin-top:0">
-				<a href="11_write.html" class="btn btn-primary">✎ 글쓰기</a>
+				<a th:href="@{/review/write}" href="11_write.html" class="btn btn-primary">✎ 글쓰기</a>
 			</div>
-			<!-- 비로그인 시: 버튼 숨김 또는 클릭 시 로그인 유도 -->
 			<div class="write-btn-wrap" data-role-visible="guest" style="margin-top:0">
 				<button class="btn"
 					onclick="if(confirm('로그인이 필요한 기능입니다. 로그인 페이지로 이동할까요?')) location.href='02_login.html'">✎
@@ -56,73 +54,63 @@
 			</div>
 		</div>
 
-		<div class="post-grid mt-16">
-			<a class="post-card" href="13_detail.html">
-				<div class="post-thumb">
-					<img src="./assets/img/netflix/squidgame.png" alt="오징어 게임3">
-				</div>
-				<div class="post-card-body">
-					<div class="post-card-title">「오징어게임 3」, 이대로 끝내도 되는가</div>
-					<div class="post-card-meta">
-						<span>리뷰왕</span>
-						<span>2026-06-30</span>
+		<!-- 
+	    ===================================================================
+	    [게시글 목록 영역]
+	    - 왼쪽: 작성 시 등록한 썸네일 이미지
+	    - 가운데: 게시글 제목
+	    - 오른쪽: 작성자 이름 & 작성일자
+	    ===================================================================
+	  -->
+		<div class="post-row-list mt-16">
+
+			<!-- Thymeleaf 반복문 (Spring Controller에서 Pageable size=10 설정 시 한 페이지 10개 출력) -->
+			<a class="post-row" th:each="post : ${postList}" th:href="@{/review/detail/{id}(id=${post.id})}"
+				href="13_detail.html">
+
+				<!-- 1. [가장 왼쪽] 작성 시 등록한 썸네일 이미지 -->
+				<div class="post-row-thumb"
+					style="width: 60px; height: 60px; flex-shrink: 0; overflow: hidden; border-radius: 6px;">
+					<!-- 이미지가 있는 경우 -->
+					<!--<img th:if="${post.thumbnailUrl != null and !#strings.isEmpty(post.thumbnailUrl)}"
+						th:src="@{${post.thumbnailUrl}}" th:alt="${post.title}"
+						style="width: 100%; height: 100%; object-fit: cover;" />-->
+
+					<!-- 이미지가 없는 경우 (대체 레이아웃) -->
+					<div th:unless="${post.thumbnailUrl != null and !#strings.isEmpty(post.thumbnailUrl)}"
+						style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: var(--bg-2, #2a2a32); color: var(--text-2, #aaa); font-size: 11px;">
+						No Image
 					</div>
 				</div>
-			</a>
-			<a class="post-card" href="13_detail.html">
-				<div class="post-thumb">
-					<img src="./assets/img/netflix/wallace.png" alt="">
+
+				<!-- 2. [가운데] 게시글 제목 -->
+				<div style="flex: 1; padding: 0 16px; min-width: 0;">
+					<div class="post-row-title" th:text="${post.title}"
+						style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+						「오징어게임 3」, 이대로 끝내도 되는가
+					</div>
 				</div>
-				<div class="post-card-body">
-					<div class="post-card-title">「더 글로리」 재감상 후기 - 복수극의 정석</div>
-					<div class="post-card-meta"><span>김리뷰</span><span>2026-06-30</span></div>
-				</div>
-			</a>
-			<a class="post-card" href="13_detail.html">
-				<div class="post-thumb">썸네일</div>
-				<div class="post-card-body">
-					<div class="post-card-title">신작 애니 「프리렌」 시즌2 예고편 분석</div>
-					<div class="post-card-meta"><span>애니덕후</span><span>2026-06-29</span></div>
-				</div>
-			</a>
-			<a class="post-card" href="13_detail.html">
-				<div class="post-thumb">썸네일</div>
-				<div class="post-card-body">
-					<div class="post-card-title">넷플릭스 예능 top5, 이번 주 순위 변동</div>
-					<div class="post-card-meta"><span>방구석평론가</span><span>2026-06-29</span></div>
+
+				<!-- 3. [오른쪽] 작성자 이름 & 작성 날짜 -->
+				<div class="post-row-right"
+					style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center; min-width: 100px; flex-shrink: 0;">
+					<span class="writer-name" th:text="${post.writer}"
+						style="font-weight: 500; font-size: 14px; color: var(--text-1, #fff);">리뷰왕</span>
+					<span class="created-date text-muted" th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd')}"
+						style="font-size: 12px; margin-top: 4px; color: var(--text-2, #888);">2026-06-30</span>
 				</div>
 			</a>
-			<a class="post-card" href="13_detail.html">
-				<div class="post-thumb">썸네일</div>
-				<div class="post-card-body">
-					<div class="post-card-title">「기생수: 더 그레이」 원작과 비교 리뷰</div>
-					<div class="post-card-meta"><span>무비홀릭</span><span>2026-06-28</span></div>
-				</div>
-			</a>
-			<a class="post-card" href="13_detail.html">
-				<div class="post-thumb">썸네일</div>
-				<div class="post-card-body">
-					<div class="post-card-title">「무빙」 최종화, 그 후 이야기</div>
-					<div class="post-card-meta"><span>액션러버</span><span>2026-06-27</span></div>
-				</div>
-			</a>
-			<a class="post-card" href="13_detail.html">
-				<div class="post-thumb">썸네일</div>
-				<div class="post-card-body">
-					<div class="post-card-title">환승연애3, 시즌 총정리</div>
-					<div class="post-card-meta"><span>예능러버</span><span>2026-06-27</span></div>
-				</div>
-			</a>
-			<a class="post-card" href="13_detail.html">
-				<div class="post-thumb">썸네일</div>
-				<div class="post-card-body">
-					<div class="post-card-title">「카지노」 시즌2 결말 분석</div>
-					<div class="post-card-meta"><span>느와르팬</span><span>2026-06-26</span></div>
-				</div>
-			</a>
+
+			<!-- 등록된 게시글이 없는 경우 예외 처리 -->
+			<div th:if="${#lists.isEmpty(postList)}"
+				style="text-align: center; padding: 50px 0; color: var(--text-2, #888);">
+				등록된 게시글이 없습니다.
+			</div>
+
 		</div>
 
-		<div class="list-toolbar" style="justify-content:center">
+		<!-- 검색 바 -->
+		<div class="list-toolbar mt-24" style="justify-content:center">
 			<div class="flex gap-8" style="max-width:450px;">
 				<div class="search-bar" style="margin:0;max-width:none;padding:12px 20px;">
 					<span class="icon">🔍</span>
@@ -145,50 +133,22 @@
 				</div>
 			</div>
 		</div>
-		<!-- 리스트 공통 페이지네이션 -나영- -->
-		<div class="pagination">
+
+		<!-- 페이지네이션 (페이지 당 10개 기준) -->
+		<div class="pagination mt-16" th:if="${totalPages != null and totalPages > 0}">
 			<button class="page-btn prev" aria-label="이전 페이지">‹</button>
-			<button class="page-btn active">1</button>
-			<button class="page-btn">2</button>
-			<button class="page-btn">3</button>
+
+			<button th:each="pageNumber : ${#numbers.sequence(1, totalPages)}"
+				th:class="${pageNumber == currentPage} ? 'page-btn active' : 'page-btn'"
+				th:text="${pageNumber}">1</button>
+
 			<button class="page-btn next" aria-label="다음 페이지">›</button>
 		</div>
-		</div>
+
 	</main>
-	<!-- 
-  ==================================
-  푸터 영역   -나영-
-  ==================================
-  -->
-	<footer class="site-footer main-footer">
-		<div class="container main-footer-inner">
-			<div class="main-footer-brand">
-				<span class="logo"><img src="assets/img/logo.png" alt="YouFlex" /></span>
-				<p>
-					당신의 콘텐츠 취향을 연결하는<br />OTT 리뷰 &amp; 커뮤니티 플랫폼
-				</p>
-			</div>
-			<div class="main-footer-info">
-				<p>
-					(주)YouFlex&nbsp;&nbsp;|&nbsp;&nbsp;대표:
-					YouFlex&nbsp;&nbsp;|&nbsp;&nbsp;사업자등록번호: 000-00-00000
-				</p>
-				<p>개인정보관리책임자: YouFlex</p>
-				<p>
-					이메일: youflex@youflex.com&nbsp;&nbsp;|&nbsp;&nbsp;고객센터:
-					00-000-0000
-				</p>
-			</div>
-			<div class="main-footer-meta">
-				<p>&copy; 2026 YouFlex. All rights reserved.</p>
-			</div>
-			<button class="main-footer-top" id="footerTopBtn" title="맨 위로">
-				↑
-			</button>
-		</div>
-	</footer>
 
-
+	<!-- 푸터 영역 -->
+	<footer th:replace="~{fragments/layout :: footer}"></footer>
 
 	<!-- 취향(관심 장르) 선택 -->
 	<div class="genre-modal-backdrop" id="listGenreModalBackdrop">
@@ -266,7 +226,7 @@
 				<button class="notification-delete" type="button" aria-label="알림 삭제">✕</button>
 			</div>
 			<div class="notification-item">
-				<span class="notification-icon">📝</span>
+				<span class="notification-icon">💬</span>
 				<div>
 					<div class="notification-text">내 게시글 "「오징어게임 3」, 이대로 끝내도 되는가"에 새 댓글이 달렸습니다.</div>
 					<div class="notification-time">어제</div>
@@ -276,7 +236,7 @@
 		</div>
 	</aside>
 
-	<button class="fab" id="chatbotFab" title="챗봇 실행">🤖</button>
+	<button class="fab" id="chatbotFab" title="챗봇 실행">💬</button>
 	<div class="overlay-backdrop" id="chatbotBackdrop"></div>
 	<aside class="slide-panel" id="chatbotPanel">
 		<div class="panel-header">
@@ -364,14 +324,8 @@
 		</div>
 	</aside>
 
-	<!--==================================
-	  푸터 영역 
-	  ==================================
-	  -->
-	<footer th:replace="~{fragments/layout :: footer}"></footer>
-
 	<script th:src="@{/js/app.js}"></script>
-	<script src="@{/js/list.js}"></script>
+	<script th:src="@{/js/list.js}"></script>
 </body>
 
 </html>
