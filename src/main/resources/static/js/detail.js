@@ -64,11 +64,15 @@ function submitNewComment() {
         alert('로그인 후 이용할 수 있어요.');
         return;
       }
-      if (!res.ok) throw new Error('comment create failed');
+      if (!res.ok) {
+        return res.json().catch(() => null).then((body) => {
+          throw new Error((body && body.message) || '댓글 등록 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.');
+        });
+      }
       location.reload();
     })
-    .catch(() => {
-      alert('댓글 등록 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.');
+    .catch((e) => {
+      alert(e.message);
     });
 }
 
@@ -128,6 +132,30 @@ function initReviewBookmark() {
 initReviewLike();
 initReviewBookmark();
 
+// ---- 게시글 삭제: 작성자 본인 확인 후 서버에 반영, 성공하면 메인으로 이동 ----
+function deleteReview() {
+  if (!confirm('게시글을 삭제하시겠습니까? 삭제한 글은 복구할 수 없습니다.')) return;
+  const reviewId = document.getElementById('currentReviewId').value;
+
+  fetch(`/review/${reviewId}`, { method: 'DELETE' })
+    .then((res) => {
+      if (res.status === 401) {
+        alert('로그인 후 이용할 수 있어요.');
+        return;
+      }
+      if (res.status === 403) {
+        alert('삭제 권한이 없어요.');
+        return;
+      }
+      if (!res.ok) throw new Error('review delete failed');
+      alert('게시글이 삭제되었습니다.');
+      location.href = '/';
+    })
+    .catch(() => {
+      alert('게시글 삭제 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.');
+    });
+}
+
 // ---- 댓글/대댓글 좋아요 토글: 서버에 등록/취소를 반영하고, 강조·카운트를 응답값으로 갱신 ----
 function toggleCommentLike(el) {
   const unit = el.closest('.comment-item, .reply-item');
@@ -186,11 +214,15 @@ function submitReplyForm(btn) {
         alert('로그인 후 이용할 수 있어요.');
         return;
       }
-      if (!res.ok) throw new Error('reply create failed');
+      if (!res.ok) {
+        return res.json().catch(() => null).then((body) => {
+          throw new Error((body && body.message) || '답글 등록 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.');
+        });
+      }
       location.reload();
     })
-    .catch(() => {
-      alert('답글 등록 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.');
+    .catch((e) => {
+      alert(e.message);
     });
 }
 
@@ -244,11 +276,15 @@ function editComment(el) {
           alert('로그인 후 이용할 수 있어요.');
           return;
         }
-        if (!res.ok) throw new Error('comment update failed');
+        if (!res.ok) {
+          return res.json().catch(() => null).then((body) => {
+            throw new Error((body && body.message) || '댓글 수정 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.');
+          });
+        }
         location.reload();
       })
-      .catch(() => {
-        alert('댓글 수정 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.');
+      .catch((e) => {
+        alert(e.message);
       });
   });
 
