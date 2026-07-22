@@ -30,6 +30,8 @@ public class ReviewService {
 	private static final int MY_BOOKMARKS_PAGE_SIZE = 5;
 	private static final int LIKE_REWARD_MILESTONE_STEP = 5; // 좋아요 몇 개 단위로 지급할지
 	private static final int LIKE_REWARD_POINT_AMOUNT = 5;   // 마일스톤 도달 시 지급할 포인트
+	private static final int HIGHLIGHT_POINT_COST = 1000;    // 포인트 상점 - 게시글 하이라이트 이용권 가격
+	private static final int HIGHLIGHT_DURATION_DAYS = 7;    // 하이라이트 노출 기간(일)
 
 	private final ReviewMapper reviewMapper;
 	private final CommentMapper commentMapper;
@@ -220,6 +222,22 @@ public class ReviewService {
 				.reviewReportReason(reason)
 				.reviewReportContent(content)
 				.build());
+	}
+
+//	9) 마이페이지 - 포인트 상점 "게시글 하이라이트 이용권 구매". 본인 게시글만 가능, 포인트 1000점을
+//	   소진(잔액 부족 시 PointService.usePoints가 예외를 던짐)한 뒤 review_highlighted를 'Y'로 전환하고
+//	   시작/만료 시각을 설정한다(만료 후 자동 해제 배치는 아직 없음 - 켜는 것까지만 구현).
+	@Transactional
+	public void purchaseHighlight(int reviewId, int memberId) {
+		ReviewDTO review = reviewMapper.findById(reviewId);
+		if (review == null) {
+			throw new ReviewNotFoundException("존재하지 않는 게시글입니다. reviewId=" + reviewId);
+		}
+		if (review.getMemberId() != memberId) {
+			throw new IllegalStateException("본인 게시글만 하이라이트할 수 있습니다.");
+		}
+		pointService.usePoints(memberId, HIGHLIGHT_POINT_COST, "게시글 하이라이트 이용권 구매");
+		reviewMapper.highlightReview(reviewId, HIGHLIGHT_DURATION_DAYS);
 	}
 
 	@Data
