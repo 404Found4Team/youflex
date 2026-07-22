@@ -19,10 +19,12 @@ import com.youflex.dto.MemberDTO;
 import com.youflex.dto.PageInfo;
 import com.youflex.dto.PointHistoryDTO;
 import com.youflex.dto.ReviewDTO;
+import com.youflex.exception.ReviewNotFoundException;
 import com.youflex.service.GenreCategoryService;
 import com.youflex.service.MemberService;
 import com.youflex.service.PointService;
 import com.youflex.service.ReviewService;
+import com.youflex.service.admin.WarningService;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
@@ -40,6 +42,7 @@ public class MemberController {
     private final GenreCategoryService genreCategoryService;
     private final ReviewService reviewService;
     private final PointService pointService;
+    private final WarningService warningService;
 
     // 로그인 폼 진입 시 rememberedId 쿠키가 있으면 아이디 입력창에 미리 채워줌
     @GetMapping("/login")
@@ -271,5 +274,41 @@ public class MemberController {
                 "totalPages", pageInfo.getTotalPages(),
                 "page", pageInfo.getPage()
         ));
+    }
+
+    // 마이페이지 - 포인트 상점 "경고 1회 차감권 구매" 버튼이 fetch로 호출하는 AJAX 엔드포인트.
+    // 포인트 10000점을 소진해서 유효 경고 1건을 차감한다(차감할 경고가 없거나 포인트가 부족하면 400 + 사유).
+    @PostMapping("/mypage/warning/revoke")
+    @ResponseBody
+    public ResponseEntity<?> revokeWarningByPoints(HttpSession session) {
+        Object loginMemberObj = session.getAttribute("loginMember");
+        if (!(loginMemberObj instanceof MemberDTO loginMember)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        try {
+            warningService.revokeWarningByPoints(loginMember.getMemberId());
+            return ResponseEntity.ok().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    // 마이페이지 - 포인트 상점 "게시글 하이라이트 이용권 구매" 모달에서 게시글을 골라 확인을 누르면 호출.
+    // 포인트 1000점을 소진해서 선택한 본인 게시글을 7일간 하이라이트 상태로 전환한다.
+    @PostMapping("/mypage/highlight")
+    @ResponseBody
+    public ResponseEntity<?> purchaseHighlight(@RequestParam("reviewId") int reviewId, HttpSession session) {
+        Object loginMemberObj = session.getAttribute("loginMember");
+        if (!(loginMemberObj instanceof MemberDTO loginMember)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        try {
+            reviewService.purchaseHighlight(reviewId, loginMember.getMemberId());
+            return ResponseEntity.ok().build();
+        } catch (ReviewNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 }
