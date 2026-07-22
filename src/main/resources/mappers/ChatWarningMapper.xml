@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.youflex.mapper.ChatWarningMapper">
+
+    <insert id="insertWarning">
+        INSERT INTO chat_warning (member_id, chatroom_id, chat_message_id, chat_warning_reason)
+        VALUES (#{memberId}, #{chatroomId}, #{chatMessageId}, #{reason})
+    </insert>
+
+    <select id="countWarnings" resultType="int">
+        SELECT COUNT(*)
+        FROM chat_warning
+        WHERE chatroom_id = #{chatroomId}
+          AND member_id = #{memberId}
+    </select>
+
+</mapper>

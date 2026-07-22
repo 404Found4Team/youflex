@@ -10,6 +10,10 @@
 // ==========================================================================
 let currentChatroomId = null;
 
+// ★ 추가: 현재 입장한 방에서 나의 역할 ("방장" / "참여자" / null)
+// - 방장일 때만 메시지에 "⚠ 경고" 버튼을 노출하기 위해 사용
+let currentChatroomRole = null;
+
 
 // ! STOMP 클라이언트 및 개별 방 구독 객체 전역 관리 변수 추가 !
 let currentStompClient = null;
@@ -223,38 +227,39 @@ function initQnaQuiz() {
 }
 
 // ==========  평론가/관리자가  채팅 내에서 특정 사용자에게 경고를 부여하는 로직 =================
+// ★ 수정: 닉네임 prompt 방식 대신, 메시지별 "⚠ 경고" 버튼(giveWarningToMessage)으로 대체됨.
+//   케밥 메뉴의 "경고 부여" 버튼은 이제 안내만 표시한다.
 function giveChatWarning() {
-    const titleEl = document.getElementById('chatroomTitleText');
-    const messages = document.getElementById("chatroomMessages");
-
-    // ★ 1. 선택된 방이 없는지 체크 (방 미선택 상태 차단)
-    const isNoRoomSelected =
-        !titleEl ||
-        titleEl.innerText.includes("방 선택 없음") ||
-        (messages && messages.querySelector('.chat-empty-state'));
-
-    if (isNoRoomSelected) {
-        alert("개설된 채팅방이 없습니다.");
-        return; // 이하 로직 실행 중단
-    }
-
-    if (!messages) return;
-
-    // ★ 2. 방이 있을 때만 경고 부여 진행
-    const name = prompt("경고를 부여할 사용자의 닉네임을 입력하세요.");
-    if (!name || !name.trim()) return; // 취소하거나 빈 값이면 무시
-
-    // 채팅창에 시스템 메시지 형태로 경고 알림을 추가
-    const msg = document.createElement("div");
-    msg.className = "chat-msg system warning";
-    msg.textContent = `⚠ ${name.trim()}님 경고 1회`;
-    messages.appendChild(msg);
-
-    // 스크롤을 맨 아래로 이동
-    if (typeof scrollToBottom === 'function') {
-        scrollToBottom(messages);
+    if (currentChatroomRole === "방장") {
+        alert("상대방 메시지에 마우스를 올리면 나타나는 '⚠ 경고' 버튼을 이용해주세요.");
     } else {
-        messages.scrollTop = messages.scrollHeight;
+        alert("방장만 경고를 부여할 수 있습니다.");
+    }
+}
+
+// ★ 추가: 특정 메시지(chatMessageId)에 경고 부여 (방장 전용)
+async function giveWarningToMessage(chatMessageId) {
+    const reason = prompt("경고 사유를 입력하세요.");
+    if (!reason || !reason.trim()) return;
+
+    try {
+        const response = await fetch(`/api/chatroom/${currentChatroomId}/warning`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chatMessageId, reason: reason.trim() })
+        });
+
+        if (!response.ok) {
+            const errText = await response.text();
+            alert(errText || "경고 부여에 실패했습니다.");
+            return;
+        }
+
+        const data = await response.json();
+        alert(data.kicked ? "경고 누적으로 해당 사용자가 강제퇴장되었습니다." : "경고가 부여되었습니다.");
+    } catch (error) {
+        console.error("경고 부여 실패:", error);
+        alert("서버 연결에 실패했습니다.");
     }
 }
 /**
@@ -319,11 +324,7 @@ function sendChatMessage() {
  *     기존에는 이 속성이 없어서 이벤트 위임 로직의 alreadyJoined 판정이 항상 false가 되어
  *     참여 중인 방인데도 switchToChatroom 대신 enterChatroom(재입장 API)이 호출되고 있었음.
  */
-/*
-==================  서버에서 받은 채팅방 목록(rooms)을 화면에 그려주는(렌더링하는) 로직  ===================
-*/
 function renderChatroomList(rooms) {
-    // 채팅방 목록을 표시할 영역 찾기
     const listContainer = document.getElementById("chatroomListContainer");
     if (!listContainer) return;
 
@@ -380,41 +381,49 @@ function renderChatroomList(rooms) {
     // 섹션 구분선
     html += `<div class="divider"></div>`;
 
-    // -------------------------------------------------------------------------
-    // [섹션 2] 참여 가능한 방
-    // -------------------------------------------------------------------------
-    html += `
-    <section class="room-section">
-      <div class="section-title">
-        <span>🌐 참여 가능한 방</span>
-        <span class="count">${availableRooms.length}</span>
-      </div>
-  `;
+	// -------------------------------------------------------------------------
+	    // [섹션 2] 참여 가능한 방
+	    // -------------------------------------------------------------------------
+	    html += `
+	    <section class="room-section">
+	      <div class="section-title">
+	        <span>🌐 참여 가능한 방</span>
+	        <span class="count">${availableRooms.length}</span>
+	      </div>
+	  `;
 
-    if (availableRooms.length === 0) {
-        html += `<div class="text-muted" style="padding:10px; font-size:12px; color:var(--text-2);">입장 가능한 채팅방이 없습니다.</div>`;
-    } else {
-        availableRooms.forEach((room) => {
-            const currentCount = room.currentMemberCount ?? 0;
-            const maxCount = room.chatroomMaxMember ?? 0;
+	    if (availableRooms.length === 0) {
+	        html += `<div class="text-muted" style="padding:10px; font-size:12px; color:var(--text-2);">입장 가능한 채팅방이 없습니다.</div>`;
+	    } else {
+	        availableRooms.forEach((room) => {
+	            const currentCount = room.currentMemberCount ?? 0;
+	            const maxCount = room.chatroomMaxMember ?? 0;
+	            
+	            // 정원 초과 여부 계산
+	            const isFull = currentCount >= maxCount;
 
-            html += `
-        <div class="room-card">
-          <div class="room-info">
-            <span class="room-name">${room.chatroomTitle}</span>
-            <span class="room-meta">${currentCount} / ${maxCount}명</span>
-          </div>
-          <button type="button" class="btn btn-primary"
-                  data-room-id="${room.chatroomId}"
-                  data-room-title="${room.chatroomTitle}">입장</button>
-        </div>
-      `;
-        });
-    }
-    html += `</section>`;
+	            html += `
+	        <div class="room-card">
+	          <div class="room-info">
+	            <span class="room-name">${room.chatroomTitle}</span>
+	            <span class="room-meta">${currentCount} / ${maxCount}명</span>
+	          </div>
+	          <!-- isFull 상태에 따라 버튼 클래스, disabled 속성, 텍스트가 동적으로 바뀝니다 -->
+	          <button type="button" class="btn ${isFull ? 'btn-secondary' : 'btn-primary'}"
+	                  data-room-id="${room.chatroomId}"
+	                  data-room-title="${room.chatroomTitle}"
+	                  ${isFull ? 'disabled' : ''}>
+	                  ${isFull ? '정원 초과' : '입장'}
+	          </button>
+	        </div>
+	      `;
+	        });
+	    }
+   
+	    html += `</section>`;
 
-    // 4. 최종 동적 생성된 HTML 주입
-    listContainer.innerHTML = html;
+	    // 4. 최종 동적 생성된 HTML 주입
+	    listContainer.innerHTML = html;
 }
 
 // ==========================================================================
@@ -484,6 +493,7 @@ function joinChatRoom(roomId, roomTitle = "") {
     openChatRoom(roomId, roomTitle);
 }
 
+
 /**
  * 채팅방 목록을 서버(GET /api/chatroom)에서 받아옴
  */
@@ -492,6 +502,31 @@ async function loadChatroomList() {
         const response = await fetch("/api/chatroom");
         if (!response.ok) return;
         const rooms = await response.json();
+        
+        // 1. 내가 참여 중이거나 개설한 방이 있는지 확인
+        // (백엔드 구조에 따라 내가 속한 방을 판별하는 조건으로 수정하세요. 예: room.isMyRoom === true 또는 memberRole이 존재할 경우 등)
+        const hasMyRoom = rooms.some(room => room.joined || room.memberRole === '방장' || room.memberRole === '참여자');
+
+        // 2. '개설' 탭 버튼 요소 선택 (HTML의 탭 선택자에 맞게 수정)
+        const createTabButton = document.querySelector("[data-tab-target='create']");
+        
+        if (createTabButton) {
+            if (hasMyRoom) {
+                // 이미 방에 소속되어 있다면 개설 탭 숨기기
+                createTabButton.style.display = "none";
+                
+                // 만약 현재 보고 있는 탭이 '개설' 탭이라면 강제로 '목록' 탭으로 이동시키기
+                const activeTab = document.querySelector(".tab-button.active"); // 활성 탭 클래스명에 맞게 조절
+                if (activeTab && activeTab.getAttribute("data-tab-target") === "create") {
+                    const listTabButton = document.querySelector("[data-tab-target='list']");
+                    if (listTabButton) listTabButton.click();
+                }
+            } else {
+                // 소속된 방이 없다면 개설 탭 다시 보여주기
+                createTabButton.style.display = "inline-block"; // 또는 원래 보이던 스타일 값
+            }
+        }
+
         renderChatroomList(rooms);
     } catch (error) {
         console.error("채팅방 목록 로딩 실패:", error);
@@ -600,6 +635,16 @@ function appendChatMessage(msgDTO) {
             </div>
         `;
         msgDiv.querySelector(".bubble").textContent = msgDTO.chatMessageContent;
+
+        // ★ 추가: 방장이면서 본인 메시지가 아니고, 메시지 ID가 있을 때만 경고 버튼 노출
+        if (currentChatroomRole === "방장" && !isMe && msgDTO.chatMessageId) {
+            const warnBtn = document.createElement("button");
+            warnBtn.type = "button";
+            warnBtn.className = "chat-warn-btn";
+            warnBtn.textContent = "⚠ 경고";
+            warnBtn.addEventListener("click", () => giveWarningToMessage(msgDTO.chatMessageId));
+            msgDiv.appendChild(warnBtn);
+        }
     }
 
     messagesBox.appendChild(msgDiv);
@@ -624,6 +669,20 @@ async function switchToChatroom(chatroomId, chatroomTitle) {
     const messagesBox = document.getElementById("chatroomMessages");
     if (messagesBox) {
         messagesBox.innerHTML = "";
+    }
+
+    // ★ 추가: 내 역할(방장/참여자) 조회 — 메시지 렌더링 시 경고 버튼 노출 여부 판단에 사용
+    try {
+        const roleRes = await fetch(`/api/chatroom/${chatroomId}/role`);
+        if (roleRes.ok) {
+            const roleData = await roleRes.json();
+            currentChatroomRole = roleData.role || null;
+        } else {
+            currentChatroomRole = null;
+        }
+    } catch (error) {
+        console.error("역할 조회 실패:", error);
+        currentChatroomRole = null;
     }
 
     try {
@@ -696,17 +755,18 @@ async function enterChatroom(chatroomId, chatroomTitle) {
                 alert(errorText || "채팅방 입장 처리에 실패했습니다.");
                 return;
             }
-			// ★ 409 Conflict (이미 참여 중인 방이 있는 경우) 처리
-			if (response.status === 409) {
-			    const roomName = errorData.existingRoomTitle || "기존 방";
-			    alert(`회원당 한 곳의 채팅방만 이용 가능합니다.\n이미 참여 중인 채팅방 [${roomName}]으로 이동합니다.`);
-			    
-			    if (errorData.existingRoomId && errorData.existingRoomId > 0) {   // ★ activeChatroomId → existingRoomId 로 수정
-			        loadChatroomList();
-			        switchToChatroom(errorData.existingRoomId, roomName);          // ★ 여기도 동일하게 수정
-			    }
-			    return;
-			}
+
+            // ★ 409 Conflict (이미 참여 중인 방이 있는 경우) 처리
+            if (response.status === 409) {
+                const roomName = errorData.existingRoomTitle || "기존 방";
+                alert(`회원당 한 곳의 채팅방만 이용 가능합니다.\n이미 참여 중인 채팅방 [${roomName}]으로 이동합니다.`);
+                
+                if (errorData.activeChatroomId && errorData.activeChatroomId > 0) {
+                    loadChatroomList();
+                    switchToChatroom(errorData.activeChatroomId, roomName);
+                }
+                return;
+            }
 
             alert(errorData.message || "채팅방 입장 처리에 실패했습니다.");
             return;
@@ -723,7 +783,7 @@ async function enterChatroom(chatroomId, chatroomTitle) {
     }
 
     loadChatroomList();
-   await switchToChatroom(chatroomId, chatroomTitle);
+    switchToChatroom(chatroomId, chatroomTitle);
 
     if (isNewJoin) {
         alert(`[${chatroomTitle}] 채팅방에 참여했습니다!`);
@@ -772,6 +832,7 @@ async function leaveChatroom() {
     }
 
     currentChatroomId = null;
+    currentChatroomRole = null;   // ★ 추가: 방을 나가면 역할 정보도 초기화
 
     // ★ 기존 코드(titleEl, messages 직접 변경) 대신 resetChatView() 호출로 변경
     resetChatView();
@@ -923,10 +984,6 @@ function initChatroomChat() {
 
 /**==================================================================================
  * 채팅방 상단 케밥(⋮) 메뉴 제어 함수 (경고 부여 & 방 나가기)
- ===================================================================================*/
-/**==================================================================================
- * 채팅방 케밥(⋮) 메뉴 및 뷰 제어 스크립트
- * - 이벤트 위임 방식을 사용하여 동적 HTML 로딩/탭 전환 시에도 100% 정상 작동
  ===================================================================================*/
 
 // 1. 케밥 메뉴 클릭 & 방 나가기 & 외부 클릭 통합 감지 (이벤트 위임)

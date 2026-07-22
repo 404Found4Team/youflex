@@ -7,6 +7,7 @@ import com.youflex.dto.ChatroomDTO;
 
 @Mapper
 public interface ChatroomMapper {
+
     int createChatroom(ChatroomDTO chatroom);
     ChatroomDTO selectChatroomById(int chatroomId);
 

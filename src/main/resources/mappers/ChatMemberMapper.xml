@@ -38,4 +38,11 @@
       AND chat_member_status = '참여중'
     LIMIT 1
 </select>
+<!-- 특정 채팅방의 현재 참여자 수 조회 쿼리 -->
+    <select id="countMembersInChatroom" resultType="int">
+        SELECT COUNT(*) 
+        FROM chat_member 
+        WHERE chatroom_id = #{chatroomId} 
+          AND chat_member_status = '참여중'
+    </select>
 </mapper>

@@ -35,4 +35,6 @@ public interface ChatMemberMapper {
     
  // ChatMemberMapper.java (인터페이스)
     Integer selectActiveChatroomIdByMemberId(int memberId); // Integer로 변경
+
+	int countMembersInChatroom(int chatroomId);
 }

@@ -2,13 +2,18 @@ package com.youflex.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
+import com.youflex.dto.ChatMessageDTO;
 import com.youflex.dto.ChatroomDTO;
 import com.youflex.exception.AlreadyInRoomException;
 import com.youflex.mapper.ChatMemberMapper;
+import com.youflex.mapper.ChatMessageMapper;
+import com.youflex.mapper.ChatWarningMapper;
 import com.youflex.mapper.ChatroomMapper;
 
 @Service
@@ -20,6 +25,16 @@ public class ChatroomService {
     @Autowired
     private ChatMemberMapper chatMemberMapper;
 
+    // ★ 추가: 경고 부여 기능에 필요한 Mapper 2개
+    @Autowired
+    private ChatWarningMapper chatWarningMapper;
+
+    @Autowired
+    private ChatMessageMapper chatMessageMapper;
+
+    // ★ 추가: 강제퇴장 처리 기준 경고 횟수
+    private static final int MAX_WARNING_COUNT = 3;
+
     /** 회원이 이미 개설한 채팅방이 있는지 여부 */
     public boolean hasChatroom(Integer memberId) {
         return chatroomMapper.countChatroomByMemberId(memberId) > 0;
@@ -30,7 +45,14 @@ public class ChatroomService {
      * - 개설자를 chat_member에 "방장" / "참여중" 상태로 함께 등록한다.
      */
     public int createChatroom(ChatroomDTO chatroom) {
-        chatroomMapper.createChatroom(chatroom);
+        try {
+            // DB에 UNIQUE 제약조건이 걸려있으므로, 중복 제목이면 여기서 에러가 발생합니다.
+            chatroomMapper.createChatroom(chatroom);
+        } catch (DuplicateKeyException e) {
+            // DB 에러를 잡아서 프론트엔드에 보낼 깔끔한 메시지로 바꿔서 다시 던집니다.
+            throw new IllegalStateException("이미 사용 중인 방 제목입니다.");
+        }
+
         int chatroomId = chatroom.getChatroomId(); // useGeneratedKeys로 채워진 PK
         chatMemberMapper.insertChatMember(chatroom.getMemberId(), chatroomId, "방장", "참여중");
         return chatroomId;
@@ -88,6 +110,14 @@ public class ChatroomService {
             throw new AlreadyInRoomException(activeRoomId, title);
         }
 
+        // ★ 2.5 인원수 초과 검사 (신규 추가)
+        // 현재 방에 참여 중인 전체 인원수를 가져옵니다.
+        int currentCount = chatMemberMapper.countMembersInChatroom(chatroomId);
+        
+        if (currentCount >= chatroom.getChatroomMaxMember()) {
+            throw new IllegalStateException("채팅방 인원이 가득 찼습니다.");
+        }
+
         // 3. 신규 입장 처리
         String role = (chatroom.getMemberId() == memberId) ? "방장" : "참여자";
         chatMemberMapper.insertChatMember(memberId, chatroomId, role, "참여중");
@@ -131,5 +161,67 @@ public class ChatroomService {
         // return chatMessageMapper.selectMessagesByChatroomId(chatroomId);
         
         return new ArrayList<>();
+    }
+
+    /**
+     * ★ 추가: 특정 회원의 특정 방 내 역할 조회 (방장 / 참여자 / 없음)
+     * - 프론트에서 경고 버튼 노출 여부를 판단하는 데 사용
+     */
+    public String getMemberRole(int chatroomId, int memberId) {
+        return chatMemberMapper.selectChatMemberRole(chatroomId, memberId);
+    }
+
+    /**
+     * ★ 추가: 특정 메시지에 경고 부여
+     * - 방장만 가능
+     * - 경고 누적 MAX_WARNING_COUNT(3)회 이상이면 해당 회원 강제퇴장
+     * @return 강제퇴장 처리되었으면 true
+   /**
+     * ★ 수정: 특정 메시지에 경고 부여
+     * - 방장만 가능
+     * - 경고 누적 MAX_WARNING_COUNT(3)회 이상이면 해당 회원 강제퇴장
+     * @return 결과를 담은 Map (kicked, targetMemberId, totalWarnings 포함)
+     */
+    public Map<String, Object> giveWarning(int chatroomId, int giverMemberId, int chatMessageId, String reason) {
+        if (reason == null || reason.trim().isEmpty()) {
+            throw new IllegalArgumentException("경고 사유를 입력해주세요.");
+        }
+
+        // 1. 요청자가 방장인지 확인
+        String giverRole = chatMemberMapper.selectChatMemberRole(chatroomId, giverMemberId);
+        if (!"방장".equals(giverRole)) {
+            throw new IllegalStateException("방장만 경고를 부여할 수 있습니다.");
+        }
+
+        // 2. 대상 메시지 조회 (작성자 확인용)
+        ChatMessageDTO message = chatMessageMapper.selectChatMessageById(chatMessageId);
+        if (message == null || message.getChatroomId() != chatroomId) {
+            throw new IllegalArgumentException("존재하지 않는 메시지입니다.");
+        }
+
+        int targetMemberId = message.getMemberId();
+
+        // 3. 방장 본인 메시지에는 경고 불가
+        if (targetMemberId == giverMemberId) {
+            throw new IllegalArgumentException("본인 메시지에는 경고를 부여할 수 없습니다.");
+        }
+
+        // 4. 경고 기록 저장
+        chatWarningMapper.insertWarning(targetMemberId, chatroomId, chatMessageId, reason);
+
+        // 5. 누적 경고 횟수 확인 후 강제퇴장 처리
+        int totalWarnings = chatWarningMapper.countWarnings(chatroomId, targetMemberId);
+        boolean kicked = false;
+        if (totalWarnings >= MAX_WARNING_COUNT) {
+            chatMemberMapper.deleteChatMember(chatroomId, targetMemberId);
+            kicked = true;
+        }
+
+        // ★ 컨트롤러에서 필요한 정보들을 Map에 담아 반환
+        return Map.of(
+            "kicked", kicked,
+            "targetMemberId", targetMemberId,
+            "totalWarnings", totalWarnings
+        );
     }
 }

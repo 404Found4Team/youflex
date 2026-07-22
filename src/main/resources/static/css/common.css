@@ -1169,3 +1169,21 @@ body.notification-open #quizPanel.slide-panel { right: 408px; }
   background: #2c313a;
   border-color: #3a3f4a;
 }
+.chat-warn-btn {
+    margin-left: 8px;
+    font-size: 11px;
+    padding: 2px 8px;
+    background: transparent;
+    border: none;              /* ★ 테두리 제거 */
+    color: #999;               /* ★ 평소엔 은은한 회색 */
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: all 0.15s ease;
+}
+
+.chat-warn-btn:hover {
+    background: transparent;   /* ★ 배경색은 변하지 않게 유지 */
+    color: #d9534f;            /* ★ 글자 및 아이콘 색상을 빨간색으로 */
+    opacity: 1;                /* ★ 마우스 올렸을 때 선명하게 보이도록 */
+}
