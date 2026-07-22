@@ -38,14 +38,10 @@
 		<!-- 정렬 및 글쓰기 툴바 -->
 		<div class="list-toolbar mt-16">
 			<div class="sort-group">
-				<button class="active">최신순</button>
-				<button>좋아요순</button>
-				<button>별점순</button>
-				<button>조회수순</button>
-			</div>
-
-			<div class="write-btn-wrap" data-role-visible="user,critic,admin" style="margin-top:0">
-				<a th:href="@{/review/write}" href="11_write.html" class="btn btn-primary">✎ 글쓰기</a>
+		    	<button th:classappend="${sort == null or sort == 'latest'} ? ' active' : ''" data-sort="latest">최신순</button>
+		    	<button th:classappend="${sort == 'likes'} ? ' active' : ''" data-sort="likes">좋아요순</button>
+	    	<button th:classappend="${sort == 'highlight'} ? ' active' : ''" data-sort="highlight">하이라이트</button>
+	    	<button th:classappend="${sort == 'views'} ? ' active' : ''" data-sort="views">조회수순</button>
 			</div>
 			<div class="write-btn-wrap" data-role-visible="guest" style="margin-top:0">
 				<button class="btn"
@@ -65,40 +61,38 @@
 		<div class="post-row-list mt-16">
 
 			<!-- Thymeleaf 반복문 (Spring Controller에서 Pageable size=10 설정 시 한 페이지 10개 출력) -->
-			<a class="post-row" th:each="post : ${postList}" th:href="@{/review/detail/{id}(id=${post.id})}"
-				href="13_detail.html">
+			<a class="post-row" th:each="post : ${postList}" th:href="@{/review/{id}(id=${post.reviewId})}"
+			    href="13_detail.html">
 
-				<!-- 1. [가장 왼쪽] 작성 시 등록한 썸네일 이미지 -->
-				<div class="post-row-thumb"
-					style="width: 60px; height: 60px; flex-shrink: 0; overflow: hidden; border-radius: 6px;">
-					<!-- 이미지가 있는 경우 -->
-					<!--<img th:if="${post.thumbnailUrl != null and !#strings.isEmpty(post.thumbnailUrl)}"
-						th:src="@{${post.thumbnailUrl}}" th:alt="${post.title}"
-						style="width: 100%; height: 100%; object-fit: cover;" />-->
+			    <!-- 1. [가장 왼쪽] 작성 시 등록한 썸네일 이미지 -->
+			    <div class="post-row-thumb"
+			        style="width: 60px; height: 60px; flex-shrink: 0; overflow: hidden; border-radius: 6px;">
+			        <!-- 이미지가 있는 경우 -->
+			        <img th:if="${post.reviewImg != null and !#strings.isEmpty(post.reviewImg)}"
+			            th:src="@{${post.reviewImg}}" th:alt="${post.reviewTitle}"
+			            style="width: 100%; height: 100%; object-fit: cover;" />
 
-					<!-- 이미지가 없는 경우 (대체 레이아웃) -->
-					<div th:unless="${post.thumbnailUrl != null and !#strings.isEmpty(post.thumbnailUrl)}"
-						style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: var(--bg-2, #2a2a32); color: var(--text-2, #aaa); font-size: 11px;">
-						No Image
-					</div>
-				</div>
+			        <!-- 이미지가 없는 경우 (대체 레이아웃) -->
+			        <div th:unless="${post.reviewImg != null and !#strings.isEmpty(post.reviewImg)}"
+			            style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: var(--bg-2, #2a2a32); color: var(--text-2, #aaa); font-size: 11px;">
+			            No Image
+			        </div>
+			    </div>
 
-				<!-- 2. [가운데] 게시글 제목 -->
-				<div style="flex: 1; padding: 0 16px; min-width: 0;">
-					<div class="post-row-title" th:text="${post.title}"
-						style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-						「오징어게임 3」, 이대로 끝내도 되는가
-					</div>
-				</div>
-
-				<!-- 3. [오른쪽] 작성자 이름 & 작성 날짜 -->
-				<div class="post-row-right"
-					style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center; min-width: 100px; flex-shrink: 0;">
-					<span class="writer-name" th:text="${post.writer}"
-						style="font-weight: 500; font-size: 14px; color: var(--text-1, #fff);">리뷰왕</span>
-					<span class="created-date text-muted" th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd')}"
-						style="font-size: 12px; margin-top: 4px; color: var(--text-2, #888);">2026-06-30</span>
-				</div>
+<!-- 2. [가운데] 게시글 제목 및 메타 -->
+                <div style="flex: 1; padding: 0 16px; min-width: 0; display: flex; flex-direction: column; justify-content: center;">
+                    <div class="post-row-title" th:text="${post.reviewTitle}"
+                        style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        「오징어게임 3」, 이대로 끝내도 되는가
+                    </div>
+                    <div class="post-row-meta" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 8px; color: var(--text-2, #888); font-size: 12px;">
+                        <span class="post-row-author" th:text="${post.memberName}">리뷰왕</span>
+                        <span class="post-row-date" th:text="${post.reviewCreatedAt.toLocalDate().equals(T(java.time.LocalDate).now()) ? #temporals.format(post.reviewCreatedAt, 'HH:mm') : #temporals.format(post.reviewCreatedAt, 'yyyy-MM-dd')}">14:22</span>
+                        <span class="post-row-hit" th:text="${'👁 조회 ' + post.reviewHit}">👁 조회 123</span>
+                        <span class="post-row-likes" th:text="${'❤️ 좋아요 ' + post.likeCount}">❤️ 좋아요 45</span>
+                        <span class="post-row-comments" th:text="${'💬 댓글 ' + post.commentCount}">💬 댓글 6</span>
+                    </div>
+			    </div>
 			</a>
 
 			<!-- 등록된 게시글이 없는 경우 예외 처리 -->
@@ -113,23 +107,23 @@
 		<div class="list-toolbar mt-24" style="justify-content:center">
 			<div class="flex gap-8" style="max-width:450px;">
 				<div class="search-bar" style="margin:0;max-width:none;padding:12px 20px;">
-					<span class="icon">🔍</span>
-					<input type="text" placeholder="제목, 작성자로 검색" style="font-size:15px" />
+				    <span class="icon">🔍</span>
+				    <input type="text" id="searchKeyword" placeholder="제목, 작성자로 검색" style="font-size:15px" />
 				</div>
 				<div class="adv-search-toggle">
-					<button class="btn" id="advToggleBtn">상세검색 ▾</button>
-					<div class="adv-search-panel" id="advPanel">
-						<label>기간</label>
-						<select>
-							<option>전체</option>
-							<option>최근 1주일</option>
-							<option>최근 1개월</option>
-							<option>최근 3개월</option>
-						</select>
-						<label>취향선택</label>
-						<button type="button" class="btn btn-block" id="listTasteBtn">취향 선택</button>
-						<button class="btn btn-primary btn-block mt-16">검색 적용</button>
-					</div>
+				    <button class="btn" id="advToggleBtn">상세검색 ▾</button>
+				    <div class="adv-search-panel" id="advPanel">
+				        <label>기간</label>
+				        <select id="searchPeriod">
+				            <option value="all">전체</option>
+				            <option value="1w">최근 1주일</option>
+				            <option value="1m">최근 1개월</option>
+				            <option value="3m">최근 3개월</option>
+				        </select>
+				        <label>취향선택</label>
+				        <button type="button" class="btn btn-block" id="listTasteBtn">취향 선택</button>
+				        <button class="btn btn-primary btn-block mt-16" id="applySearchBtn">검색 적용</button>
+				    </div>
 				</div>
 			</div>
 		</div>
