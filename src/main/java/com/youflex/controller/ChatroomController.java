@@ -249,13 +249,14 @@ public class ChatroomController {
                 notice = Map.of(
                     "type", "KICKED",
                     "chatroomId", chatroomId,
-                    "message", "경고 누적(" + totalWarnings + "회)으로 채팅방에서 강제퇴장되었습니다."
+                    "message", "경고 누적(" + totalWarnings + "회)으로 채팅방에서 강제퇴장되었습니다.",
+                    "reason", "사유: " + reason
                 );
             } else {
                 notice = Map.of(
                     "type", "WARNING",
                     "chatroomId", chatroomId,
-                    "message", "경고를 받았습니다. (누적 " + totalWarnings + "/3회) 사유: " + reason
+                    "message", "경고를 받았습니다. (누적 " + totalWarnings + "/3회)\n사유: " + reason
                 );
             }
             

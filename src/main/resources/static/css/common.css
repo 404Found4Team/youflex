@@ -381,8 +381,8 @@ body.notification-open #quizPanel.slide-panel { right: 408px; }
 .chat-msg .bubble { background: var(--bg-2); padding: 10px 12px; border-radius: 12px; font-size: 13px; line-height: 1.4; }
 .chat-msg.me { align-self: flex-end; flex-direction: row-reverse; }        /* 내가 보낸 메시지는 오른쪽 정렬 */
 .chat-msg.me .bubble { background: var(--accent); color: #fff; }
-.chat-msg.system { align-self: center; font-size: 11px; color: var(--text-2); background: none; } /* "OOO님이 입장했습니다" 같은 시스템 안내 문구 */
-.chat-msg.system.warning { color: var(--danger); font-weight: 700; } /* 경고 부여 알림 문구는 빨간색으로 강조 */
+.chat-msg.system { align-self: center; font-size: 11px; color: var(--text-2); background: none; white-space: pre-wrap; text-align: center; } /* "OOO님이 입장했습니다" 같은 시스템 안내 문구 */
+.chat-msg.system.warning { color: var(--danger); font-weight: 700; white-space: pre-wrap; text-align: center; } /* 경고 부여 알림 문구는 빨간색으로 강조 */
 
 /* 패널 맨 아래, 메시지 입력창 + 전송 버튼 줄 (퀴즈/채팅방 공용) */
 .panel-input-row {

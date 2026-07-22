@@ -14,4 +14,12 @@
           AND member_id = #{memberId}
     </select>
 
+    <select id="countWarningByMessage" resultType="int">
+        SELECT COUNT(*)
+        FROM chat_warning
+        WHERE chatroom_id = #{chatroomId}
+          AND member_id = #{memberId}
+          AND chat_message_id = #{chatMessageId}
+    </select>
+
 </mapper>

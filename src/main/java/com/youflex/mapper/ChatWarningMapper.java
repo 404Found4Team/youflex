@@ -15,4 +15,9 @@ public interface ChatWarningMapper {
     /** 특정 방에서 특정 회원이 받은 누적 경고 횟수 */
     int countWarnings(@Param("chatroomId") int chatroomId,
                        @Param("memberId") int memberId);
+
+    /** 동일한 메시지에 대해 이미 경고를 받았는지 확인 */
+    int countWarningByMessage(@Param("chatroomId") int chatroomId,
+                               @Param("memberId") int memberId,
+                               @Param("chatMessageId") int chatMessageId);
 }

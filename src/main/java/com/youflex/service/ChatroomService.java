@@ -33,8 +33,37 @@ public class ChatroomService {
     @Autowired
     private ChatMessageMapper chatMessageMapper;
 
+    @Autowired
+    private org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
+
     // ★ 추가: 강제퇴장 처리 기준 경고 횟수
     private static final int MAX_WARNING_COUNT = 3;
+
+    /**
+     * 시스템 입/퇴장/강퇴 메시지를 DB에 저장하고 해당 채팅방으로 실시간 브로드캐스트한다.
+     */
+    private void sendSystemMessage(int chatroomId, int memberId, String actionText) {
+        try {
+            String memberName = chatMessageMapper.selectMemberName(memberId);
+            if (memberName == null) memberName = "회원";
+
+            ChatMessageDTO systemMsg = ChatMessageDTO.builder()
+                    .chatroomId(chatroomId)
+                    .memberId(memberId)
+                    .memberName("SYSTEM")
+                    .chatMessageContent("'" + memberName + "'님이 " + actionText)
+                    .build();
+
+            // 1. DB 저장 (새로고침해도 보존됨)
+            chatMessageMapper.insertChatMessage(systemMsg);
+
+            // 2. 실시간 STOMP 브로드캐스트
+            messagingTemplate.convertAndSend("/sub/chatroom/" + chatroomId, systemMsg);
+        } catch (Exception e) {
+            // 시스템 메시지 처리 실패 시 로그 기록 후 기존 흐름 유지
+            e.printStackTrace();
+        }
+    }
 
     /** 회원이 이미 개설한 채팅방이 있는지 여부 */
     public boolean hasChatroom(Integer memberId) {
@@ -99,6 +128,12 @@ public class ChatroomService {
             throw new IllegalArgumentException("존재하지 않는 채팅방입니다.");
         }
 
+        // ★ 0. 강퇴 이력 확인 — 강퇴당한 채팅방에는 재입장 불가
+        int kickedCount = chatMemberMapper.isKickedFromChatroom(chatroomId, memberId);
+        if (kickedCount > 0) {
+            throw new IllegalStateException("강퇴당한 채팅방에는 다시 입장할 수 없습니다.");
+        }
+
         // 1. 이미 '현재 방'에 참여 중인지 확인 (재입장)
         String existingRole = chatMemberMapper.selectChatMemberRole(chatroomId, memberId);
         if (existingRole != null) {
@@ -124,6 +159,9 @@ public class ChatroomService {
         // 3. 신규 입장 처리
         String role = (chatroom.getMemberId() == memberId) ? "방장" : "참여자";
         chatMemberMapper.insertChatMember(memberId, chatroomId, role, "참여중");
+
+        // ★ 신규 입장 시스템 메시지 생성, DB 저장 및 실시간 브로드캐스트
+        sendSystemMessage(chatroomId, memberId, "입장했습니다.");
         return true;
     }
     /**
@@ -153,6 +191,8 @@ public class ChatroomService {
             if (result <= 0) {
                 throw new IllegalArgumentException("참여 중인 채팅방이 아닙니다.");
             }
+            // ★ 퇴장 시스템 메시지 생성, DB 저장 및 실시간 브로드캐스트
+            sendSystemMessage(chatroomId, memberId, "퇴장했습니다.");
         }
     }
 
@@ -186,6 +226,7 @@ public class ChatroomService {
      * - 경고 누적 MAX_WARNING_COUNT(3)회 이상이면 해당 회원 강제퇴장
      * @return 결과를 담은 Map (kicked, targetMemberId, totalWarnings 포함)
      */
+    @Transactional
     public Map<String, Object> giveWarning(int chatroomId, int giverMemberId, int chatMessageId, String reason) {
         if (reason == null || reason.trim().isEmpty()) {
             throw new IllegalArgumentException("경고 사유를 입력해주세요.");
@@ -210,15 +251,41 @@ public class ChatroomService {
             throw new IllegalArgumentException("본인 메시지에는 경고를 부여할 수 없습니다.");
         }
 
-        // 4. 경고 기록 저장
+        // 4. 동일 메시지에 대해 같은 대상 회원에게 중복 경고 금지
+        int alreadyWarnedCount = chatWarningMapper.countWarningByMessage(chatroomId, targetMemberId, chatMessageId);
+        if (alreadyWarnedCount > 0) {
+            throw new IllegalStateException("이미 이 메시지에 경고를 부여했습니다.");
+        }
+
+        // 5. 경고 기록 저장
         chatWarningMapper.insertWarning(targetMemberId, chatroomId, chatMessageId, reason);
 
-        // 5. 누적 경고 횟수 확인 후 강제퇴장 처리
+        // 5. 누적 경고 횟수 확인
         int totalWarnings = chatWarningMapper.countWarnings(chatroomId, targetMemberId);
+
+        // ★ 5.1 경고 부여 사유 멘트를 DB chat_message에 저장하고 실시간 브로드캐스트 (새로고침 시에도 보존됨)
+        String targetName = chatMessageMapper.selectMemberName(targetMemberId);
+        if (targetName == null) targetName = "회원";
+        String warnText = " '" + targetName + "'님이 경고를 받았습니다. (누적 " + totalWarnings + "/3회)\n사유: " + reason;
+        
+        ChatMessageDTO warnSystemMsg = ChatMessageDTO.builder()
+                .chatroomId(chatroomId)
+                .memberId(targetMemberId)
+                .memberName("SYSTEM")
+                .chatMessageContent(warnText)
+                .build();
+        chatMessageMapper.insertChatMessage(warnSystemMsg);
+        messagingTemplate.convertAndSend("/sub/chatroom/" + chatroomId, warnSystemMsg);
+
+        // 6. 3회 이상일 때 강제퇴장 처리
         boolean kicked = false;
         if (totalWarnings >= MAX_WARNING_COUNT) {
-            chatMemberMapper.deleteChatMember(chatroomId, targetMemberId);
+            // ★ 수정: 물리 삭제 대신 상태를 '강퇴'로 변경하여 재입장 차단 이력을 남김
+            chatMemberMapper.updateStatusToKicked(chatroomId, targetMemberId);
             kicked = true;
+
+            // ★ 강퇴 시스템 메시지 생성, DB 저장 및 실시간 브로드캐스트
+            sendSystemMessage(chatroomId, targetMemberId, "강제퇴장되었습니다.");
         }
 
         // ★ 컨트롤러에서 필요한 정보들을 Map에 담아 반환

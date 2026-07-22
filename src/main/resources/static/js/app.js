@@ -497,37 +497,35 @@ function joinChatRoom(roomId, roomTitle = "") {
 /**
  * 채팅방 목록을 서버(GET /api/chatroom)에서 받아옴
  */
-async function loadChatroomList() {
+async function loadChatroomList(autoEnterMyRoom = true) {
     try {
         const response = await fetch("/api/chatroom");
         if (!response.ok) return;
         const rooms = await response.json();
 
-        // 1. 내가 참여 중이거나 개설한 방이 있는지 확인
-        // (백엔드 구조에 따라 내가 속한 방을 판별하는 조건으로 수정하세요. 예: room.isMyRoom === true 또는 memberRole이 존재할 경우 등)
-        const hasMyRoom = rooms.some(room => room.joined || room.memberRole === '방장' || room.memberRole === '참여자');
+        // 1. 내가 참여 중인 방 찾기
+        const myJoinedRoom = rooms.find(room => room.joined === true);
+        const hasMyRoom = !!myJoinedRoom;
 
-        // 2. '개설' 탭 버튼 요소 선택 (HTML의 탭 선택자에 맞게 수정)
+        // 2. '개설' 탭 버튼 요소 선택
         const createTabButton = document.querySelector("[data-tab-target='create']");
 
         if (createTabButton) {
             if (hasMyRoom) {
                 // 이미 방에 소속되어 있다면 개설 탭 숨기기
                 createTabButton.style.display = "none";
-
-                // 만약 현재 보고 있는 탭이 '개설' 탭이라면 강제로 '목록' 탭으로 이동시키기
-                const activeTab = document.querySelector(".tab-button.active"); // 활성 탭 클래스명에 맞게 조절
-                if (activeTab && activeTab.getAttribute("data-tab-target") === "create") {
-                    const listTabButton = document.querySelector("[data-tab-target='list']");
-                    if (listTabButton) listTabButton.click();
-                }
             } else {
                 // 소속된 방이 없다면 개설 탭 다시 보여주기
-                createTabButton.style.display = "inline-block"; // 또는 원래 보이던 스타일 값
+                createTabButton.style.display = "inline-block";
             }
         }
 
         renderChatroomList(rooms);
+
+        // 3. ★ 내가 이미 참여 중인 방이 존재하면, [대화하기]를 누르지 않아도 즉시 해당 채팅방으로 자동 연결!
+        if (autoEnterMyRoom && myJoinedRoom) {
+            switchToChatroom(myJoinedRoom.chatroomId, myJoinedRoom.chatroomTitle);
+        }
     } catch (error) {
         console.error("채팅방 목록 로딩 실패:", error);
     }
@@ -554,6 +552,33 @@ function initChatroomSocket() {
             const rooms = JSON.parse(message.body);
             renderChatroomList(rooms);
         });
+
+        // ★ 회원 개인 전용 알림 채널 구독 (경고 알림 및 3회 경고 시 즉시 강제퇴장 처리)
+        const memberIdInput = document.getElementById("currentMemberId");
+        const currentMemberId = memberIdInput ? Number(memberIdInput.value) : 0;
+        if (currentMemberId > 0) {
+            currentStompClient.subscribe(`/sub/member/${currentMemberId}/notice`, (message) => {
+                const notice = JSON.parse(message.body);
+                if (notice.type === "WARNING") {
+                    alert(`[경고 알림]\n${notice.message}`);
+                } else if (notice.type === "KICKED") {
+                    alert(`[강제퇴장 알림]\n${notice.message}`);
+                    // 현재 해당 채팅방에 입장해 있다면 즉시 세션 해제 및 목록으로 이동
+                    if (currentChatroomId && currentChatroomId == notice.chatroomId) {
+                        if (currentChatroomSubscription) {
+                            currentChatroomSubscription.unsubscribe();
+                            currentChatroomSubscription = null;
+                        }
+                        currentChatroomId = null;
+                        currentChatroomRole = null;
+                        resetChatView();
+                        const listTabButton = document.querySelector("[data-tab-target='list']");
+                        if (listTabButton) listTabButton.click();
+                        loadChatroomList(false);
+                    }
+                }
+            });
+        }
     });
 
     return currentStompClient;
@@ -586,6 +611,33 @@ function connectChatroom(chatroomId) {
             const rooms = JSON.parse(message.body);
             renderChatroomList(rooms);
         });
+
+        // ★ 회원 개인 전용 알림 채널 구독 (경고 알림 및 3회 경고 시 즉시 강제퇴장 처리)
+        const memberIdInput = document.getElementById("currentMemberId");
+        const currentMemberId = memberIdInput ? Number(memberIdInput.value) : 0;
+        if (currentMemberId > 0) {
+            currentStompClient.subscribe(`/sub/member/${currentMemberId}/notice`, (message) => {
+                const notice = JSON.parse(message.body);
+                if (notice.type === "WARNING") {
+                    alert(`[경고 알림]\n${notice.message}`);
+                } else if (notice.type === "KICKED") {
+                    alert(`[강제퇴장 알림]\n${notice.message}`);
+                    // 현재 해당 채팅방에 입장해 있다면 즉시 세션 해제 및 목록으로 이동
+                    if (currentChatroomId && currentChatroomId == notice.chatroomId) {
+                        if (currentChatroomSubscription) {
+                            currentChatroomSubscription.unsubscribe();
+                            currentChatroomSubscription = null;
+                        }
+                        currentChatroomId = null;
+                        currentChatroomRole = null;
+                        resetChatView();
+                        const listTabButton = document.querySelector("[data-tab-target='list']");
+                        if (listTabButton) listTabButton.click();
+                        loadChatroomList(false);
+                    }
+                }
+            });
+        }
 
         // 2. 현재 입장한 채팅방 메시지 구독
         if (chatroomId) {
@@ -623,13 +675,22 @@ function appendChatMessage(msgDTO) {
     // 받아온 메시지의 작성자 ID와 내 ID가 같으면 'me' 클래스 추가 (우측 빨간색)
     const isMe = (msgDTO.memberId === currentMemberId);
 
-    const msgDiv = document.createElement("div");
-    msgDiv.className = isMe ? "chat-msg me" : "chat-msg";
+    // ★ 시스템 메시지 여부 판단 (memberName이 SYSTEM이거나, 입/퇴장/강퇴/경고 안내 멘트인 경우)
+    const content = msgDTO.chatMessageContent || "";
+    const isWarnMsg = content.includes("경고를 받았습니다") || content.includes("⚠️") || content.includes("강제퇴장");
+    const isSystemMsg = msgDTO.memberName === "SYSTEM" ||
+        !msgDTO.memberId ||
+        content.includes("입장했습니다") ||
+        content.includes("퇴장했습니다") ||
+        isWarnMsg;
 
-    if (msgDTO.memberName === "SYSTEM" || !msgDTO.memberId) {
-        msgDiv.className = "chat-msg system";
-        msgDiv.textContent = msgDTO.chatMessageContent;
+    const msgDiv = document.createElement("div");
+
+    if (isSystemMsg) {
+        msgDiv.className = isWarnMsg ? "chat-msg system warning" : "chat-msg system";
+        msgDiv.textContent = content;
     } else {
+        msgDiv.className = isMe ? "chat-msg me" : "chat-msg";
         msgDiv.innerHTML = `
             <div class="avatar"></div>
             <div class="message-container">
@@ -637,14 +698,14 @@ function appendChatMessage(msgDTO) {
                 <div class="bubble"></div>
             </div>
         `;
-        msgDiv.querySelector(".bubble").textContent = msgDTO.chatMessageContent;
+        msgDiv.querySelector(".bubble").textContent = content;
 
         // ★ 추가: 방장이면서 본인 메시지가 아니고, 메시지 ID가 있을 때만 경고 버튼 노출
         if (currentChatroomRole === "방장" && !isMe && msgDTO.chatMessageId) {
             const warnBtn = document.createElement("button");
             warnBtn.type = "button";
             warnBtn.className = "chat-warn-btn";
-            warnBtn.textContent = "⚠ 경고";
+            warnBtn.textContent = "경고";
             warnBtn.addEventListener("click", () => giveWarningToMessage(msgDTO.chatMessageId));
             msgDiv.appendChild(warnBtn);
         }
@@ -759,8 +820,15 @@ async function enterChatroom(chatroomId, chatroomTitle) {
                 return;
             }
 
-            // ★ 409 Conflict (이미 참여 중인 방이 있는 경우) 처리
+            // ★ 409 Conflict (이미 참여 중인 방이 있는 경우 또는 강퇴/정원초과) 처리
             if (response.status === 409) {
+                // 강퇴당한 채팅방인 경우 — 메시지만 표시하고 종료
+                const errMsg = errorData.message || (typeof errorData === 'string' ? errorData : '');
+                if (errMsg.includes('강퇴')) {
+                    alert(errMsg);
+                    return;
+                }
+
                 const roomName = errorData.existingRoomTitle || "기존 방";
                 const existingRoomId = errorData.existingRoomId || null;
                 alert(`회원당 한 곳의 채팅방만 이용 가능합니다.\n이미 참여 중인 채팅방 [${roomName}]으로 이동합니다.`);
@@ -780,7 +848,7 @@ async function enterChatroom(chatroomId, chatroomTitle) {
         isNewJoin = data.isNew;
     } catch (error) {
         console.error("서버 통신 에러:", error);
-        alert("서버 연결에 실패했습니다. 네트워크 상태를 확인하세요.");
+        alert("강제 퇴장으로 채팅방에 입장 할 수 없습니다.");
         return;
     } finally {
         isEnteringChatroom = false;
@@ -791,18 +859,6 @@ async function enterChatroom(chatroomId, chatroomTitle) {
 
     if (isNewJoin) {
         alert(`[${chatroomTitle}] 채팅방에 참여했습니다!`);
-
-        const memberNameInput = document.getElementById("currentMemberName");
-        const loginMemberName = memberNameInput && memberNameInput.value.trim() !== "" ? memberNameInput.value : "회원";
-
-        const messages = document.getElementById("chatroomMessages");
-        if (messages) {
-            const joinMsg = document.createElement("div");
-            joinMsg.className = "chat-msg system";
-            joinMsg.textContent = `'${loginMemberName}'님이 입장했습니다`;
-            messages.appendChild(joinMsg);
-            scrollToBottom(messages);
-        }
     }
 }
 // ==========================================================================
@@ -844,7 +900,7 @@ async function leaveChatroom() {
     const listTabButton = document.querySelector("[data-tab-target='list']");
     if (listTabButton) listTabButton.click();
 
-    loadChatroomList();
+    loadChatroomList(false);
 }
 
 // ==========================================================================

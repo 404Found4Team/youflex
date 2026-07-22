@@ -19,6 +19,7 @@
 		FROM chat_member
 		WHERE chatroom_id = #{chatroomId}
 		AND member_id = #{memberId}
+		AND chat_member_status = '참여중'
 	</select>
 
 	<delete id="deleteAllChatMembersByChatroomId">
@@ -44,5 +45,23 @@
         FROM chat_member 
         WHERE chatroom_id = #{chatroomId} 
           AND chat_member_status = '참여중'
+    </select>
+
+    <!-- ★ 추가: 강퇴 처리 — 참여 상태를 '강퇴'로 변경 (물리 삭제 대신 소프트 처리) -->
+    <update id="updateStatusToKicked">
+        UPDATE chat_member
+        SET chat_member_status = '강퇴'
+        WHERE chatroom_id = #{chatroomId}
+          AND member_id = #{memberId}
+          AND chat_member_status = '참여중'
+    </update>
+
+    <!-- ★ 추가: 특정 회원이 해당 채팅방에서 강퇴당한 이력이 있는지 확인 -->
+    <select id="isKickedFromChatroom" resultType="int">
+        SELECT COUNT(*)
+        FROM chat_member
+        WHERE chatroom_id = #{chatroomId}
+          AND member_id = #{memberId}
+          AND chat_member_status = '강퇴'
     </select>
 </mapper>
