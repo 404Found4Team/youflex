@@ -96,7 +96,8 @@ function renderNotificationList() {
 function addNotification(icon, text, occurredAt) {
     const timeStr = formatNotifTime(occurredAt);
     notificationList.push({ icon, text, time: timeStr, read: false });
-    if (notificationList.length > 50) notificationList.shift();
+    // ★ 저장 개수 상한을 99+ 표시 기준(99)보다 높게 잡아야 실제로 "99+"가 뜰 수 있음
+    if (notificationList.length > 100) notificationList.shift();
     updateNotifBadge();
     const panel = document.getElementById("notificationPanel");
     if (panel && panel.classList.contains("open")) {
