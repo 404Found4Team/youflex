@@ -132,14 +132,14 @@
 		</div>
 
 		<!-- 페이지네이션 (페이지 당 10개 기준) -->
-		<div class="pagination mt-16" th:if="${totalPages != null and totalPages > 0}">
-			<button class="page-btn prev" aria-label="이전 페이지">‹</button>
+		<div class="pagination mt-16" th:if="${totalPages != null and totalPages > 0}" th:attr="data-total-pages=${totalPages}">
+			<button type="button" class="page-btn prev" aria-label="이전 페이지" th:disabled="${currentPage <= 1}">‹</button>
 
-			<button th:each="pageNumber : ${#numbers.sequence(1, totalPages)}"
+			<button type="button" th:each="pageNumber : ${#numbers.sequence(1, totalPages)}"
 				th:class="${pageNumber == currentPage} ? 'page-btn active' : 'page-btn'"
 				th:text="${pageNumber}">1</button>
 
-			<button class="page-btn next" aria-label="다음 페이지">›</button>
+			<button type="button" class="page-btn next" aria-label="다음 페이지" th:disabled="${currentPage >= totalPages}">›</button>
 		</div>
 
 	</main>
@@ -200,7 +200,7 @@
 	<div class="overlay-backdrop" id="notificationBackdrop"></div>
 	<aside class="slide-panel" th:replace="~{fragments/layout :: notification}"></aside>
 
-	<button class="fab" id="chatbotFab" title="챗봇 실행">💬</button>
+	<!--<button class="fab" id="chatbotFab" title="챗봇 실행">💬</button>-->
 	<div class="overlay-backdrop" id="chatbotBackdrop"></div>
 	<aside class="slide-panel" id="chatbotPanel">
 		<div class="panel-header">

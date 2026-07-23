@@ -84,6 +84,7 @@ function goToFilteredList(overrides = {}) {
 
   // 검색/정렬 조건이 바뀌면 페이지는 1페이지로 초기화
   params.set('page', '1');
+  if (overrides.page !== undefined) params.set('page', String(overrides.page));
 
   if (overrides.sort !== undefined) params.set('sort', overrides.sort);
   if (overrides.keyword !== undefined) {
@@ -101,3 +102,28 @@ function goToFilteredList(overrides = {}) {
 
   window.location.href = `${window.location.pathname}?${params.toString()}`;
 }
+
+document.addEventListener('click', (event) => {
+  const button = event.target.closest('button.page-btn');
+  if (!button || button.disabled) return;
+  if (!button.closest('.pagination')) return;
+
+  const pageText = button.textContent.trim();
+  const currentPage = Number(new URLSearchParams(window.location.search).get('page') || '1');
+  const totalPages = Number(button.closest('.pagination').dataset.totalPages || '0');
+
+  if (pageText === '‹') {
+    if (currentPage > 1) goToFilteredList({ page: currentPage - 1 });
+    return;
+  }
+
+  if (pageText === '›') {
+    if (currentPage < totalPages) goToFilteredList({ page: currentPage + 1 });
+    return;
+  }
+
+  const pageNumber = Number(pageText);
+  if (!Number.isNaN(pageNumber) && pageNumber <= totalPages) {
+    goToFilteredList({ page: pageNumber });
+  }
+});
