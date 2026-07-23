@@ -1,14 +1,14 @@
 document.getElementById('advToggleBtn').addEventListener('click', () => {
-  document.getElementById('advPanel').classList.toggle('open');
+    document.getElementById('advPanel').classList.toggle('open');
 });
 
 // ===== 정렬 버튼: 클릭 시 sort 파라미터를 붙여 목록 재요청 =====
 document.querySelectorAll('.sort-group button').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.sort-group button').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    goToFilteredList({ sort: btn.dataset.sort });
-  });
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.sort-group button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        goToFilteredList({ sort: btn.dataset.sort });
+    });
 });
 
 // ===== [1] 장르 선택 모달 및 최대 3개 제한 로직 =====
@@ -76,12 +76,13 @@ if (genreDoneBtn && genreModal) {
                 hiddenInput.value = genre.id;
                 form.appendChild(hiddenInput);
             });
-        } else{
-			// 목록 페이지(상세검색) : 검색 조건 배열에 저장
-			selectedListGenres = selectedGenres.map(g=>g.id);
-		}
+        } else {
+            // 목록 페이지(상세검색)에는 reviewForm이 없으므로,이 else 분기에서 선택한 장르 id를 selectedListGenres 배열에 저장
+            // 목록 페이지(상세검색) : 검색 조건 배열에 저장
+            selectedListGenres = selectedGenres.map(g => g.id);
+        }
 
-		console.log(selectedGenres);
+        console.log(selectedGenres);
         genreModal.classList.remove('open');
         // alert(`선택하신 ${selectedGenres.length}개의 장르가 임시 매핑되었습니다.`);
     });
@@ -90,70 +91,80 @@ if (genreDoneBtn && genreModal) {
 // ===== "검색 적용" 버튼: 키워드 + 기간 + 장르를 모두 모아 검색 요청 =====
 const applySearchBtn = document.getElementById('applySearchBtn');
 if (applySearchBtn) {
-  applySearchBtn.addEventListener('click', () => {
-    const keyword = document.getElementById('searchKeyword').value.trim();
-    const period = document.getElementById('searchPeriod').value;
+    applySearchBtn.addEventListener('click', () => {
+        const keyword = document.getElementById('searchKeyword').value.trim();
+        const period = document.getElementById('searchPeriod').value;
 
-    goToFilteredList({ keyword, period, genres: selectedListGenres });
-  });
+        // [수정] genres -> genreCategoryIds : ReviewListSearchDTO 필드명과 일치시킴 (파라미터명 불일치로 서버 바인딩 안 되던 문제)
+        goToFilteredList({ keyword, period, genreCategoryIds: selectedListGenres });
+    });
 }
 
 const searchForm = document.getElementById('searchForm');
 if (searchForm) {
-  searchForm.addEventListener('submit', () => {
-    const keyword = document.getElementById('searchKeyword').value.trim();
-    const period = document.getElementById('searchPeriod') ? document.getElementById('searchPeriod').value : 'all';
+    searchForm.addEventListener('submit', () => {
+        const keyword = document.getElementById('searchKeyword').value.trim();
+        const period = document.getElementById('searchPeriod') ? document.getElementById('searchPeriod').value : 'all';
 
-    goToFilteredList({ keyword, period, genres: selectedListGenres });
-  });
+        // [수정] genres -> genreCategoryIds : ReviewListSearchDTO 필드명과 일치시킴 (파라미터명 불일치로 서버 바인딩 안 되던 문제)
+        goToFilteredList({ keyword, period, genreCategoryIds: selectedListGenres });
+    });
 }
 
 // ===== 공통: 현재 정렬/검색 조건을 쿼리 파라미터로 만들어 목록 페이지 재요청 =====
 function goToFilteredList(overrides = {}) {
-  const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(window.location.search);
 
-  // 검색/정렬 조건이 바뀌면 페이지는 1페이지로 초기화
-  params.set('page', '1');
-  if (overrides.page !== undefined) params.set('page', String(overrides.page));
+    // 검색/정렬 조건이 바뀌면 페이지는 1페이지로 초기화
+    params.set('page', '1');
+    if (overrides.page !== undefined) params.set('page', String(overrides.page));
 
-  if (overrides.sort !== undefined) params.set('sort', overrides.sort);
-  if (overrides.keyword !== undefined) {
-    if (overrides.keyword) params.set('keyword', overrides.keyword);
-    else params.delete('keyword');
-  }
-  if (overrides.period !== undefined) {
-    if (overrides.period && overrides.period !== 'all') params.set('period', overrides.period);
-    else params.delete('period');
-  }
-  if (overrides.genres !== undefined) {
-    if (overrides.genres.length > 0) params.set('genres', overrides.genres.join(','));
-    else params.delete('genres');
-  }
+    if (overrides.sort !== undefined) params.set('sort', overrides.sort);
+    if (overrides.keyword !== undefined) {
+        if (overrides.keyword) params.set('keyword', overrides.keyword);
+        else params.delete('keyword');
+    }
+    if (overrides.period !== undefined) {
+        if (overrides.period && overrides.period !== 'all') params.set('period', overrides.period);
+        else params.delete('period');
+    }
 
-  window.location.href = `${window.location.pathname}?${params.toString()}`;
+    // [수정] overrides.genres -> overrides.genreCategoryIds 로 변경
+    // [수정] 콤마로 합친 문자열 하나(set) 대신, 같은 이름의 파라미터를 여러 개(append) 붙이는 방식으로 변경
+    //        -> Spring이 List<Integer> genreCategoryIds 로 안전하게 바인딩하도록 하기 위함
+    //        (기존 방식인 params.set('genres', arr.join(',')) 는 파라미터명도 틀렸고,
+    //         콤마 문자열 하나로는 List<Integer> 바인딩이 보장되지 않음)
+    if (overrides.genreCategoryIds !== undefined) {
+        params.delete('genreCategoryIds'); // 기존 값 초기화 후 다시 채움
+        if (overrides.genreCategoryIds.length > 0) {
+            overrides.genreCategoryIds.forEach(id => params.append('genreCategoryIds', id));
+        }
+    }
+	
+	window.location.href = `${window.location.pathname}?${params.toString()}`;
+
+	document.addEventListener('click', (event) => {
+	    const button = event.target.closest('button.page-btn');
+	    if (!button || button.disabled) return;
+	    if (!button.closest('.pagination')) return;
+
+	    const pageText = button.textContent.trim();
+	    const currentPage = Number(new URLSearchParams(window.location.search).get('page') || '1');
+	    const totalPages = Number(button.closest('.pagination').dataset.totalPages || '0');
+
+	    if (pageText === '‹') {
+	        if (currentPage > 1) goToFilteredList({ page: currentPage - 1 });
+	        return;
+	    }
+
+	    if (pageText === '›') {
+	        if (currentPage < totalPages) goToFilteredList({ page: currentPage + 1 });
+	        return;
+	    }
+
+	    const pageNumber = Number(pageText);
+	    if (!Number.isNaN(pageNumber) && pageNumber <= totalPages) {
+	        goToFilteredList({ page: pageNumber });
+	    }
+	});
 }
-
-document.addEventListener('click', (event) => {
-  const button = event.target.closest('button.page-btn');
-  if (!button || button.disabled) return;
-  if (!button.closest('.pagination')) return;
-
-  const pageText = button.textContent.trim();
-  const currentPage = Number(new URLSearchParams(window.location.search).get('page') || '1');
-  const totalPages = Number(button.closest('.pagination').dataset.totalPages || '0');
-
-  if (pageText === '‹') {
-    if (currentPage > 1) goToFilteredList({ page: currentPage - 1 });
-    return;
-  }
-
-  if (pageText === '›') {
-    if (currentPage < totalPages) goToFilteredList({ page: currentPage + 1 });
-    return;
-  }
-
-  const pageNumber = Number(pageText);
-  if (!Number.isNaN(pageNumber) && pageNumber <= totalPages) {
-    goToFilteredList({ page: pageNumber });
-  }
-});
