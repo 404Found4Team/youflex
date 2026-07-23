@@ -56,13 +56,13 @@
 
 		<!-- 
 	    ===================================================================
-	    [게시글 목록 영역]
+	    [게시글 목록 영역 - 일반 정렬 (최신순/좋아요순/조회수순)]
 	    - 왼쪽: 작성 시 등록한 썸네일 이미지
 	    - 가운데: 게시글 제목
 	    - 오른쪽: 작성자 이름 & 작성일자
 	    ===================================================================
 	  -->
-		<div class="post-row-list mt-16">
+		<div class="post-row-list mt-16" th:if="${sort != 'highlight'}">
 
 			<!-- Thymeleaf 반복문 (Spring Controller에서 Pageable size=10 설정 시 한 페이지 10개 출력) -->
 			<a class="post-row" th:each="post : ${postList}" th:href="@{/review/{id}(id=${post.reviewId})}"
@@ -82,7 +82,7 @@
 			        style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: var(--bg-2, #2a2a32); color: var(--text-2, #aaa); font-size: 11px;">
 			        No Image
 			    </div>
-			</div>
+		</div>
                 <div style="flex: 1; padding: 0 16px; min-width: 0; display: flex; flex-direction: column; justify-content: center;">
                     <div class="post-row-title" th:text="${post.reviewTitle}"
                         style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
@@ -104,6 +104,32 @@
 				등록된 게시글이 없습니다.
 			</div>
 
+		</div>
+
+		<!-- 
+	    ===================================================================
+	    [게시글 목록 영역 - 하이라이트 정렬 전용]
+	    - 격자(그리드) 카드형: 썸네일 + 제목 + 작성자/작성일
+	    - '하이라이트' 버튼을 눌렀을 때만 이 레이아웃으로 표시
+	    ===================================================================
+	  -->
+		<div class="highlight-grid mt-16" th:if="${sort == 'highlight'}">
+			<a class="highlight-card" th:each="post : ${postList}" th:href="@{/review/{id}(id=${post.reviewId})}">
+				<div class="highlight-thumb">
+					<img th:if="${post.reviewImg != null and !#strings.isEmpty(post.reviewImg)}"
+						th:src="@{'/upload/' + ${post.reviewImg}}"
+						th:alt="${post.reviewTitle}" />
+					<div class="highlight-thumb-empty" th:unless="${post.reviewImg != null and !#strings.isEmpty(post.reviewImg)}">No Image</div>
+				</div>
+				<div class="highlight-content">
+					<div class="highlight-title" th:text="${post.reviewTitle}">게시글 제목</div>
+					<div class="highlight-meta">
+						<span th:text="${post.memberName}">리뷰왕</span>
+						<span th:text="${post.reviewCreatedAt.toLocalDate().equals(T(java.time.LocalDate).now()) ? #temporals.format(post.reviewCreatedAt, 'HH:mm') : #temporals.format(post.reviewCreatedAt, 'yyyy-MM-dd')}">14:22</span>
+					</div>
+				</div>
+			</a>
+			<div class="highlight-empty" th:if="${#lists.isEmpty(postList)}">등록된 게시글이 없습니다.</div>
 		</div>
 
 		<!-- 검색 바 -->
