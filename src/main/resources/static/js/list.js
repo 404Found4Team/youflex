@@ -11,51 +11,81 @@ document.querySelectorAll('.sort-group button').forEach(btn => {
   });
 });
 
-// ===== 상세검색 안 "취향 선택" 버튼 -> 마이페이지와 같은 취향(장르) 선택 모달 =====
-const MAX_LIST_GENRE_SELECT = 3;
-const listGenreModal = document.getElementById('listGenreModalBackdrop');
-const listGenreGrid = listGenreModal ? listGenreModal.querySelector('.genre-grid') : null;
+// ===== [1] 장르 선택 모달 및 최대 3개 제한 로직 =====
+const MAX_GENRE_SELECT = 3;
+const tasteBtn = document.getElementById('listTasteBtn');           // 상세검색 > 취향선택 버튼
+const genreModal = document.getElementById('genreModalBackdrop');   // 모달창 배경
+const genreGrid = document.getElementById('genreGrid');             // 장르 칩 그리드
+const genreSkipBtn = document.getElementById('genreSkipBtn');       // 취소 버튼
+const genreDoneBtn = document.getElementById('genreDoneBtn');       // 저장 버튼
+let selectedListGenres = [];	// 파일 상단에 변수 선언 추가
 
-// 검색 적용 시 사용할 선택된 장르 목록
-let selectedListGenres = [];
-
-document.getElementById('listTasteBtn').addEventListener('click', () => {
-  listGenreModal.classList.add('open');
-});
-document.getElementById('listGenreCancelBtn').addEventListener('click', () => {
-  listGenreModal.classList.remove('open');
-});
-
-// 장르 칩 클릭 시 선택/해제 토글 (최대 3개 제한)
-if (listGenreGrid) {
-  const listGenreChips = listGenreGrid.querySelectorAll('.genre-chip');
-
-  listGenreChips.forEach((chip) => {
-    // 모달 열 때 이전 선택 상태를 칩에 반영
-    if (selectedListGenres.includes(chip.getAttribute('data-genre'))) {
-      chip.classList.add('selected');
-    }
-
-    chip.addEventListener('click', () => {
-      const selectedCount = listGenreGrid.querySelectorAll('.genre-chip.selected').length;
-
-      if (!chip.classList.contains('selected') && selectedCount >= MAX_LIST_GENRE_SELECT) {
-        alert(`관심 장르는 최대 ${MAX_LIST_GENRE_SELECT}개까지만 선택할 수 있어요.`);
-        return;
-      }
-
-      chip.classList.toggle('selected');
+// 1. 장르 선택 모달 열기
+if (tasteBtn && genreModal) {
+    tasteBtn.addEventListener('click', () => {
+        genreModal.classList.add('open');
     });
-  });
 }
 
-document.getElementById('listGenreApplyBtn').addEventListener('click', () => {
-  const selectedChips = listGenreGrid.querySelectorAll('.genre-chip.selected');
-  selectedListGenres = Array.from(selectedChips).map(chip => chip.getAttribute('data-genre'));
-  listGenreModal.classList.remove('open');
-  // 장르 모달에서는 '적용'을 눌러도 바로 검색하지 않고, 값만 담아둠
-  // (최종 검색 실행은 상세검색 패널의 "검색 적용" 버튼에서)
-});
+// 2. 장르 선택 모달 닫기 (취소 클릭 시)
+if (genreSkipBtn && genreModal) {
+    genreSkipBtn.addEventListener('click', () => {
+        genreModal.classList.remove('open');
+    });
+}
+
+// 3. 장르 칩 클릭 이벤트 핸들러 (최대 3개 제한 핵심 로직)
+if (genreGrid) {
+    const genreChips = genreGrid.querySelectorAll('.genre-chip');
+
+    genreChips.forEach((chip) => {
+        chip.addEventListener('click', () => {
+            const selectedCount = genreGrid.querySelectorAll('.genre-chip.selected').length;
+
+            if (!chip.classList.contains('selected') && selectedCount >= MAX_GENRE_SELECT) {
+                alert(`관심 장르는 최대 ${MAX_GENRE_SELECT}개까지만 선택할 수 있어요.`);
+                return;
+            }
+
+            chip.classList.toggle('selected');
+        });
+    });
+}
+
+// 4. 저장 완료 버튼 클릭 시 처리
+if (genreDoneBtn && genreModal) {
+    genreDoneBtn.addEventListener('click', () => {
+        const selectedChips = genreGrid.querySelectorAll('.genre-chip.selected');
+        const selectedGenres = [];
+
+        selectedChips.forEach(chip => {
+            selectedGenres.push({
+                id: chip.getAttribute('data-genre-id'),
+                name: chip.querySelector('span').textContent.trim()
+            });
+        });
+
+        const form = document.getElementById('reviewForm');
+        if (form) {
+            form.querySelectorAll('input[name="genreCategoryIds"]').forEach(el => el.remove());
+
+            selectedGenres.forEach(genre => {
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'genreCategoryIds';
+                hiddenInput.value = genre.id;
+                form.appendChild(hiddenInput);
+            });
+        } else{
+			// 목록 페이지(상세검색) : 검색 조건 배열에 저장
+			selectedListGenres = selectedGenres.map(g=>g.id);
+		}
+
+		console.log(selectedGenres);
+        genreModal.classList.remove('open');
+        // alert(`선택하신 ${selectedGenres.length}개의 장르가 임시 매핑되었습니다.`);
+    });
+}
 
 // ===== "검색 적용" 버튼: 키워드 + 기간 + 장르를 모두 모아 검색 요청 =====
 const applySearchBtn = document.getElementById('applySearchBtn');
