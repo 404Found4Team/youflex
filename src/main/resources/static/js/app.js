@@ -91,6 +91,7 @@ function getHeaderNotifIcon(type) {
     if (type === "댓글" || type === "대댓글") return "💬";
     if (type === "QNA답변") return "📩";
     if (type === "좋아요") return "❤️";
+    if (type === "신고처리완료") return "🚩";
     return "🔔";
 }
 
@@ -663,7 +664,7 @@ function renderChatroomList(rooms) {
 	    <div class="room-card joined">
 	      <div class="room-info">
 	        <span class="room-name">${room.chatroomTitle}</span>
-	        <span class="room-meta">${currentCount} / ${maxCount}명</span>
+	        <span class="room-meta room-meta-clickable" data-room-id="${room.chatroomId}" title="참여 중인 멤버 보기" style="cursor:pointer; text-decoration:underline dotted;">${currentCount} / ${maxCount}명</span>
 	      </div>
 	      <button type="button" class="btn btn-chat"
 	              data-room-id="${room.chatroomId}"
@@ -703,7 +704,7 @@ function renderChatroomList(rooms) {
 	        <div class="room-card">
 	          <div class="room-info">
 	            <span class="room-name">${room.chatroomTitle}</span>
-	            <span class="room-meta">${currentCount} / ${maxCount}명</span>
+	            <span class="room-meta room-meta-clickable" data-room-id="${room.chatroomId}" title="참여 중인 멤버 보기" style="cursor:pointer; text-decoration:underline dotted;">${currentCount} / ${maxCount}명</span>
 	          </div>
 	          <!-- isFull 상태에 따라 버튼 클래스, disabled 속성, 텍스트가 동적으로 바뀝니다 -->
 	          <button type="button" class="btn ${isFull ? 'btn-secondary' : 'btn-primary'}"
@@ -1083,6 +1084,7 @@ function appendChatMessage(msgDTO, isHistoryReplay = false) {
     //   ChatroomService가 이미 notifications 테이블에 적재해 두었으므로, DB에서 다시 불러와 실제 id로 동기화한다.
     if (isSystemMsg) {
         loadChatRoomNotificationsFromServer();
+        refreshChatroomMembersBar(); // 입장/퇴장/강퇴로 참여자 구성이 바뀌었을 수 있으므로 실시간 참여자 바도 갱신
     } else if (!isMe) {
         if (isChatViewActive()) {
             // 지금 그 채팅방을 실제로 보고 있는 중이면 바로 읽음 위치 갱신 (안읽음 뱃지/구분선 대상 아님)
@@ -1136,6 +1138,9 @@ async function switchToChatroom(chatroomId, chatroomTitle) {
     if (messagesBox) {
         messagesBox.innerHTML = "";
     }
+
+    // ★ 실시간 참여자 목록 바 로드 (클릭 없이 항상 표시)
+    refreshChatroomMembersBar();
 
     // ★ 추가: 내 역할(방장/참여자) 조회 — 메시지 렌더링 시 경고 버튼 노출 여부 판단에 사용
     try {
@@ -1495,6 +1500,14 @@ function initChatroomChat() {
                 return;
             }
 
+            // ★ "N / M명" 클릭 → 방에 들어가지 않고도 그 방의 참여 중인 멤버 목록 미리보기
+            const metaEl = e.target.closest(".room-meta-clickable");
+            if (metaEl) {
+                e.stopPropagation();
+                openRoomMembersPeekModal(metaEl.dataset.roomId, metaEl);
+                return;
+            }
+
             const btn = e.target.closest("button[data-room-id]");
             if (!btn) return;
             const chatroomId = btn.dataset.roomId;
@@ -1567,15 +1580,15 @@ function initChatroomChat() {
 	} // ← 이 전체를 감싸고 있던 상위 함수/블록을 닫는 괄호 (필요에 따라 확인)
 
 /**
- * 실시간 참여자 목록 팝업 조회 및 모달 열기 (방장 상단 고정)
+ * 실시간 참여자 목록 바 갱신 - 클릭 없이 항상 표시되며(방장 상단 고정),
+ * 방에 들어갈 때 + 입장/퇴장/강퇴가 일어날 때마다 다시 불러온다.
  */
-async function openChatroomMembersModal() {
+async function refreshChatroomMembersBar() {
     if (!currentChatroomId) return;
 
-    const modal = document.getElementById("chatroomMembersModal");
     const listEl = document.getElementById("chatroomMembersList");
     const titleEl = document.getElementById("membersModalTitle");
-    if (!modal || !listEl) return;
+    if (!listEl) return;
 
     try {
         const response = await fetch(`/api/chatroom/${currentChatroomId}/members`);
@@ -1600,75 +1613,128 @@ async function openChatroomMembersModal() {
             `;
             listEl.appendChild(li);
         });
-
-        modal.classList.add("open");
     } catch (error) {
         console.error("참여자 목록 로딩 실패:", error);
     }
 }
 
+/**
+ * ★ 추가: 채팅방 "목록" 탭에서 방에 들어가지 않고도 참여 중인 멤버를 미리 볼 수 있는 팝업
+ * - #chatroomMembersModal은 "채팅" 탭 안에 중첩되어 있어 "목록" 탭에서는 화면에 보이지 않으므로,
+ *   body에 직접 붙는 별도의 모달을 하나 더 둔다 (탭 전환과 무관하게 항상 위에 뜸).
+ */
+function ensureRoomMembersPeekModal() {
+    let modal = document.getElementById("roomMembersPeekModal");
+    if (modal) return modal;
+
+    modal = document.createElement("div");
+    modal.id = "roomMembersPeekModal";
+    modal.className = "room-members-peek-modal";
+    modal.innerHTML = `
+        <div class="members-modal-header">
+            <span id="roomMembersPeekTitle">👥 참여 중인 멤버</span>
+            <button type="button" class="members-close-btn" id="roomMembersPeekCloseBtn">&times;</button>
+        </div>
+        <ul class="members-modal-list" id="roomMembersPeekList"></ul>
+    `;
+    document.body.appendChild(modal);
+
+    modal.querySelector("#roomMembersPeekCloseBtn").addEventListener("click", () => {
+        modal.classList.remove("open");
+    });
+    // 모달 및 "N / M명" 텍스트 바깥을 클릭하면 닫기
+    document.addEventListener("click", (e) => {
+        if (!modal.classList.contains("open")) return;
+        if (modal.contains(e.target) || e.target.closest(".room-meta-clickable")) return;
+        modal.classList.remove("open");
+    });
+
+    return modal;
+}
+
+/** 클릭한 "N / M명" 텍스트 바로 아래에 모달이 뜨도록 위치 계산 */
+function positionRoomMembersPeekModal(modal, anchorEl) {
+    if (!anchorEl) return;
+    const rect = anchorEl.getBoundingClientRect();
+    const modalWidth = 280;
+    const margin = 16;
+    const left = Math.min(rect.left, window.innerWidth - modalWidth - margin);
+    modal.style.top = `${rect.bottom + 6}px`;
+    modal.style.left = `${Math.max(margin, left)}px`;
+}
+
+/** 특정 채팅방(참여 여부 무관)의 참여 중인 멤버 목록을 조회해 클릭한 위치 바로 아래에 팝업으로 보여줌 */
+async function openRoomMembersPeekModal(chatroomId, anchorEl) {
+    if (!chatroomId) return;
+    const modal = ensureRoomMembersPeekModal();
+    const listEl = modal.querySelector("#roomMembersPeekList");
+    const titleEl = modal.querySelector("#roomMembersPeekTitle");
+    positionRoomMembersPeekModal(modal, anchorEl);
+
+    try {
+        const response = await fetch(`/api/chatroom/${chatroomId}/members`);
+        if (!response.ok) return;
+        const members = await response.json();
+
+        if (titleEl) {
+            titleEl.textContent = `👥 참여 중인 멤버 (${members.length}명)`;
+        }
+
+        listEl.innerHTML = "";
+        if (members.length === 0) {
+            listEl.innerHTML = `<li class="members-modal-item" style="justify-content:center; color:var(--text-2);">참여 중인 멤버가 없습니다.</li>`;
+        } else {
+            members.forEach(m => {
+                const isOwner = m.chatMemberRole === "방장";
+                const li = document.createElement("li");
+                li.className = isOwner ? "members-modal-item owner" : "members-modal-item";
+                li.innerHTML = `
+                    <span class="member-name-text">👤 ${m.memberName}</span>
+                    ${isOwner ? '<span class="owner-badge">방장</span>' : '<span style="color:var(--text-2); font-size:11px;">참여자</span>'}
+                `;
+                listEl.appendChild(li);
+            });
+        }
+
+        modal.classList.add("open");
+    } catch (error) {
+        console.error("참여 멤버 목록 로딩 실패:", error);
+    }
+}
+
 /**==================================================================================
- * 채팅방 상단 케밥(⋮) 메뉴 & 참여자 목록 팝업 제어 함수
+ * 채팅방 상단 케밥(⋮) 메뉴 & 방 나가기 제어 함수
+ * (참여자 목록은 더 이상 클릭으로 여닫는 팝업이 아니라 항상 표시되는 고정 바 - refreshChatroomMembersBar 참고)
  ===================================================================================*/
 
-// 1. 케밥 메뉴 & 방 제목 클릭(참여자 목록) & 방 나가기 & 외부 클릭 통합 감지
+// 1. 케밥 메뉴 & 방 나가기 & 외부 클릭 통합 감지
 document.addEventListener('click', (e) => {
     const dropdown = document.getElementById('chatroomDropdown');
-    const membersModal = document.getElementById('chatroomMembersModal');
 
     // ① 케밥 버튼(⋮) 클릭 시 드롭다운 토글
     const menuBtn = e.target.closest('#chatroomMenuBtn');
     if (menuBtn) {
         e.stopPropagation();
-        if (membersModal) membersModal.classList.remove('open');
         if (dropdown) {
             dropdown.classList.toggle('open');
         }
         return;
     }
 
-    // ② 채팅방 제목 클릭 시 실시간 참여자 목록 팝업 모달 토글 (방장 상단 고정)
-    const titleClickTarget = e.target.closest('#chatroomTitleText');
-    if (titleClickTarget) {
-        e.stopPropagation();
-        if (dropdown) dropdown.classList.remove('open');
-        if (membersModal) {
-            if (membersModal.classList.contains('open')) {
-                membersModal.classList.remove('open');
-            } else {
-                openChatroomMembersModal();
-            }
-        }
-        return;
-    }
-
-    // ③ 참여자 목록 닫기 버튼 클릭 시
-    const membersCloseBtn = e.target.closest('#chatroomMembersCloseBtn');
-    if (membersCloseBtn && membersModal) {
-        membersModal.classList.remove('open');
-        return;
-    }
-
-    // ④ 채팅방 나가기 버튼 클릭 시
+    // ② 채팅방 나가기 버튼 클릭 시
     const leaveBtn = e.target.closest('#chatroomLeaveBtn');
     if (leaveBtn) {
         if (dropdown) dropdown.classList.remove('open');
-        if (membersModal) membersModal.classList.remove('open');
         if (typeof leaveChatroom === 'function') {
             leaveChatroom(); // 채팅방 나가기 기존 함수 실행
         }
         return;
     }
 
-    // ⑤ 드롭다운 및 참여자 모달 바깥 영역 클릭 시 닫기
+    // ③ 드롭다운 바깥 영역 클릭 시 닫기
     if (dropdown && dropdown.classList.contains('open')) {
         if (!dropdown.contains(e.target)) {
             dropdown.classList.remove('open');
-        }
-    }
-    if (membersModal && membersModal.classList.contains('open')) {
-        if (!membersModal.contains(e.target)) {
-            membersModal.classList.remove('open');
         }
     }
 });
@@ -1678,6 +1744,8 @@ function resetChatView() {
     const titleEl = document.getElementById('chatroomTitleText');
     const messagesEl = document.getElementById('chatroomMessages');
     const dropdownEl = document.getElementById('chatroomDropdown');
+    const membersListEl = document.getElementById('chatroomMembersList');
+    const membersTitleEl = document.getElementById('membersModalTitle');
 
     // 상단 방 제목 초기화
     if (titleEl) {
@@ -1689,13 +1757,17 @@ function resetChatView() {
         messagesEl.innerHTML = '<div class="chat-empty-state">선택하신 채팅방이 존재하지 않습니다.</div>';
     }
 
-    // 열려있던 드롭다운 및 참여자 모달 닫기
+    // 열려있던 드롭다운 닫기
     if (dropdownEl) {
         dropdownEl.classList.remove('open');
     }
-    const membersModal = document.getElementById('chatroomMembersModal');
-    if (membersModal) {
-        membersModal.classList.remove('open');
+
+    // 참여자 목록 바도 비워서 초기 상태로
+    if (membersTitleEl) {
+        membersTitleEl.textContent = "👥 실시간 참여자";
+    }
+    if (membersListEl) {
+        membersListEl.innerHTML = "";
     }
 }
 // ---- 취향/장르 선택 칩 (클릭 시 선택 표시 토글) ----
