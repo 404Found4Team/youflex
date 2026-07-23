@@ -18,18 +18,29 @@ let currentChatroomRole = null;
 let currentStompClient = null;
 let currentChatroomSubscription = null;
 
+// ★ 추가: 현재 참여 중인 채팅방이 하나라도 있는지 여부 (renderChatroomList가 갱신) - 참여 중인 방이
+//   없을 때는 채팅방 알림 종 아이콘의 빨간 뱃지를 숨기기 위해 사용 (뱃지 외 나머지 UI는 그대로 유지)
+let hasJoinedChatroom = false;
+
 // ★ 추가: 현재 열려있는 방에서 "여기까지는 읽었다"의 기준이 되는 chatMessageId (localStorage에 방별로 저장)
 // - null이면 이 방을 한 번도 본 적이 없다는 뜻이라, 안읽음 구분선 없이 그냥 맨 아래로 스크롤한다
 let currentRoomLastReadId = null;
 
+/** 로그인한 회원 고유 id - localStorage 키를 계정별로 분리하기 위해 사용
+ *  (같은 브라우저에서 여러 계정으로 테스트/로그인할 때 "마지막으로 읽은 위치"가 서로 안 섞이도록) */
+function getCurrentMemberIdForStorage() {
+    const memberIdInput = document.getElementById("currentMemberId");
+    return memberIdInput ? Number(memberIdInput.value) : 0;
+}
+
 function getLastReadMessageId(chatroomId) {
-    const stored = localStorage.getItem(`chatLastRead_${chatroomId}`);
+    const stored = localStorage.getItem(`chatLastRead_${chatroomId}_${getCurrentMemberIdForStorage()}`);
     return stored !== null ? Number(stored) : null;
 }
 
 function setLastReadMessageId(chatroomId, messageId) {
     if (!chatroomId || !messageId) return;
-    localStorage.setItem(`chatLastRead_${chatroomId}`, String(messageId));
+    localStorage.setItem(`chatLastRead_${chatroomId}_${getCurrentMemberIdForStorage()}`, String(messageId));
 }
 
 /** 채팅 패널이 열려있고 "채팅" 탭이 실제로 보이는 중인지 - 지금 보고 있으면 바로 읽음 처리하기 위해 사용 */
@@ -213,7 +224,9 @@ function updateChatRoomNotifBadge() {
     const btn = document.getElementById("openNotifPanelBtn");
     if (btn) {
         let badge = btn.querySelector(".cr-notif-badge");
-        if (unread > 0) {
+        // ★ 참여 중인 채팅방이 하나도 없으면 안읽음이 있어도 종 아이콘의 빨간 뱃지는 숨김
+        //   (나머지 UI - 종 아이콘 자체, "참여 중인 채팅방이 없습니다" 문구 등 - 는 그대로 유지)
+        if (unread > 0 && hasJoinedChatroom) {
             if (!badge) {
                 badge = document.createElement("span");
                 badge.className = "cr-notif-badge";
@@ -629,15 +642,15 @@ function renderChatroomList(rooms) {
     // 1. 기존 목록 초기화
     listContainer.innerHTML = "";
 
-    // 2. 방 목록이 아예 없을 때 예외 처리
-    if (!rooms || rooms.length === 0) {
-        listContainer.innerHTML = `<div class="text-muted" style="padding:24px 16px; text-align:center; font-size:13px;">개설된 채팅방이 없습니다.</div>`;
-        return;
-    }
+    // 2. 방 목록이 아예 없어도(rooms가 빈 배열) 아래 3번부터는 그대로 진행한다.
+    //    joinedRooms/availableRooms가 각각 빈 배열이 되어 섹션별 "없습니다" 문구가 정상적으로 뜨고,
+    //    "내가 참여 중인 방" 제목 + 🔔 종 아이콘 등 기본 UI 골격은 그대로 유지된다 (종 아이콘 뱃지만 hasJoinedChatroom로 제어).
+    rooms = rooms || [];
 
     // 3. 참여 여부(room.joined)에 따라 두 그룹으로 분류
     const joinedRooms = rooms.filter((room) => room.joined === true);
     const availableRooms = rooms.filter((room) => room.joined !== true);
+    hasJoinedChatroom = joinedRooms.length > 0;
 
     let html = "";
 
@@ -760,6 +773,31 @@ function switchTab(tabName) {
     document.querySelectorAll(".panel-body").forEach((panel) => {
         panel.classList.toggle("active", panel.dataset.tabPanel === tabName);
     });
+
+    // ★ "채팅" 탭으로 전환되는 순간 - 패널을 닫았다 여는 것과 무관하게(예: "목록" 탭 보다가 다시 "채팅" 탭 클릭),
+    //   안읽음 구분선이 있으면 그 위치로 스크롤하고, 지금부터 보고 있는 것이므로 읽음 처리한다.
+    //   (기존에는 switchToChatroom()을 다시 거칠 때만 이 처리가 됐어서, 패널을 안 닫고 탭만 왔다갔다 하면
+    //   구분선이 DOM에는 있어도 스크롤이 항상 맨 아래에 멈춰 있어 눈에 안 띄는 문제가 있었음)
+    if (tabName === "chat" && currentChatroomId) {
+        const messagesBox = document.getElementById("chatroomMessages");
+        if (messagesBox) {
+            requestAnimationFrame(() => scrollChatToUnreadOrBottom(messagesBox));
+        }
+        resetChatUnreadBadge();
+        markChatroomViewedNow(currentChatroomId);
+    }
+}
+
+/** 현재 렌더링된 마지막 메시지까지 "읽음"으로 확정 (DOM에서 직접 최신 메시지 id를 읽어와 저장) */
+function markChatroomViewedNow(chatroomId) {
+    const messagesBox = document.getElementById("chatroomMessages");
+    if (!messagesBox) return;
+    const msgEls = messagesBox.querySelectorAll("[data-message-id]");
+    if (msgEls.length === 0) return;
+    const latestId = Number(msgEls[msgEls.length - 1].dataset.messageId);
+    if (!latestId) return;
+    setLastReadMessageId(chatroomId, latestId);
+    currentRoomLastReadId = latestId;
 }
 
 /**
@@ -1070,7 +1108,7 @@ function appendChatMessage(msgDTO, isHistoryReplay = false) {
     if (isUnread && !messagesBox.querySelector(".chat-unread-divider")) {
         const divider = document.createElement("div");
         divider.className = "chat-unread-divider";
-        divider.textContent = "새로운 메시지";
+        divider.textContent = "여기부터 새로운 메시지입니다";
         messagesBox.appendChild(divider);
     }
 
@@ -1294,6 +1332,15 @@ async function enterChatroom(chatroomId, chatroomTitle) {
         alert(`[${chatroomTitle}] 채팅방에 참여했습니다!`);
     }
 }
+/** 방을 나가거나 강제삭제하는 등 본인이 직접 마무리지은 액션 직후 - 그로 인해 방금 새로 쌓인
+ *  채팅방 알림(예: "강제 삭제했습니다")까지 본인 것은 안읽음으로 남지 않도록 정리 */
+function clearChatUnreadAfterOwnAction() {
+    resetChatUnreadBadge();
+    fetch("/api/chatroom/notifications/read", { method: "POST" })
+        .then(() => loadChatRoomNotificationsFromServer())
+        .catch(err => console.error("채팅방 알림 읽음 처리 실패:", err));
+}
+
 // ==========================================================================
 // ! 채팅방 나가기 비동기 처리 함수
 // ==========================================================================
@@ -1329,6 +1376,49 @@ async function leaveChatroom() {
 
     // ★ 기존 코드(titleEl, messages 직접 변경) 대신 resetChatView() 호출로 변경
     resetChatView();
+    clearChatUnreadAfterOwnAction();
+
+    const listTabButton = document.querySelector("[data-tab-target='list']");
+    if (listTabButton) listTabButton.click();
+
+    loadChatroomList(false);
+}
+
+// ==========================================================================
+// ! 채팅방 강제삭제(운영자 전용) 비동기 처리 함수
+// ==========================================================================
+async function forceDeleteChatroom() {
+    if (!currentChatroomId) {
+        alert("선택된 채팅방이 없습니다.");
+        return;
+    }
+    if (!confirm("이 채팅방을 강제로 삭제하시겠습니까?\n방에 있는 모든 참여자가 나가게 됩니다.")) return;
+
+    try {
+        const response = await fetch(`/api/chatroom/${currentChatroomId}`, {
+            method: 'DELETE'
+        });
+        if (!response.ok) {
+            const errorText = await response.text();
+            alert(errorText || "채팅방 강제삭제에 실패했습니다.");
+            return;
+        }
+    } catch (error) {
+        console.error("채팅방 강제삭제 요청 실패:", error);
+        alert("서버 연결에 실패했습니다. 네트워크 상태를 확인하세요.");
+        return;
+    }
+
+    if (currentChatroomSubscription) {
+        currentChatroomSubscription.unsubscribe();
+        currentChatroomSubscription = null;
+    }
+
+    currentChatroomId = null;
+    currentChatroomRole = null;
+
+    resetChatView();
+    clearChatUnreadAfterOwnAction();
 
     const listTabButton = document.querySelector("[data-tab-target='list']");
     if (listTabButton) listTabButton.click();
@@ -1731,7 +1821,15 @@ document.addEventListener('click', (e) => {
         return;
     }
 
-    // ③ 드롭다운 바깥 영역 클릭 시 닫기
+    // ③ 채팅방 강제삭제 버튼(운영자 전용) 클릭 시
+    const forceDeleteBtn = e.target.closest('#chatroomForceDeleteBtn');
+    if (forceDeleteBtn) {
+        if (dropdown) dropdown.classList.remove('open');
+        forceDeleteChatroom();
+        return;
+    }
+
+    // ④ 드롭다운 바깥 영역 클릭 시 닫기
     if (dropdown && dropdown.classList.contains('open')) {
         if (!dropdown.contains(e.target)) {
             dropdown.classList.remove('open');
