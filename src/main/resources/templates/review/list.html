@@ -40,7 +40,7 @@
 				<button th:classappend="${sort == null or sort == 'latest'} ? ' active' : ''"
 					data-sort="latest">최신순</button>
 				<button th:classappend="${sort == 'likes'} ? ' active' : ''" data-sort="likes">좋아요순</button>
-				<button th:classappend="${sort == 'highlight'} ? ' active' : ''" data-sort="highlight">하이라이트</button>
+				<!--<button th:classappend="${sort == 'highlight'} ? ' active' : ''" data-sort="highlight">하이라이트</button>-->
 				<button th:classappend="${sort == 'views'} ? ' active' : ''" data-sort="views">조회수순</button>
 			</div>
 			<div class="write-btn-wrap" th:if="${session.loginMember != null}" style="margin-top:0">
