@@ -33,14 +33,14 @@ public class ChatMessageController {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
-    /** 방 입장 시 이전 메시지 내역 조회 */
+    /** 방 입장 시 이전 메시지 내역 조회 - 내가 이 방에 입장한 시각 이후 메시지만 내려온다 */
     @GetMapping("/{chatroomId}/messages")
     public ResponseEntity<?> getMessages(@PathVariable("chatroomId") int chatroomId, HttpSession session) {
         Object loginMemberObj = session.getAttribute("loginMember");
-        if (!(loginMemberObj instanceof MemberDTO)) {
+        if (!(loginMemberObj instanceof MemberDTO loginMember)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
         }
-        List<ChatMessageDTO> messages = chatMessageMapper.getMessagesByChatroomId(chatroomId);
+        List<ChatMessageDTO> messages = chatMessageMapper.getMessagesByChatroomId(chatroomId, loginMember.getMemberId());
         return ResponseEntity.ok(messages);
     }
 
