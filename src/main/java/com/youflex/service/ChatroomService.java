@@ -88,9 +88,11 @@ public class ChatroomService {
         }
     }
 
-    // actionText 문구로 채팅방 알림 종류(입장/퇴장/경고/강퇴)를 판별
+    // actionText 문구로 채팅방 알림 종류(입장/퇴장/경고/강퇴/삭제)를 판별
     private String resolveChatNotifType(String actionText) {
         if (actionText.contains("강제퇴장") || actionText.contains("강제 삭제")) return "강퇴";
+        // ★ 방장이 나가서 채팅방이 삭제된 경우 - "강제 삭제"(운영자)와는 별개의 알림 종류로 구분
+        if (actionText.contains("삭제")) return "삭제";
         if (actionText.contains("입장")) return "입장";
         if (actionText.contains("퇴장")) return "퇴장";
         if (actionText.contains("경고")) return "경고";
@@ -218,6 +220,9 @@ public class ChatroomService {
         }
 
         if ("방장".equals(role)) {
+            // ★ 방장이 나가면 채팅방 전체가 삭제되므로, 실제로 삭제하기 전에 남아있는 참여자들에게
+            //   안내 방송(시스템 메시지) + 알림을 먼저 남긴다 (삭제 후에는 대상 회원 목록을 구할 수 없음)
+            sendSystemMessage(chatroomId, memberId, "방장이 나가서 채팅방이 삭제되었습니다.");
             // 방장이 나가는 경우 -> 채팅방 전체 삭제
             chatMemberMapper.deleteAllChatMembersByChatroomId(chatroomId);
             chatroomMapper.deleteChatroom(chatroomId);

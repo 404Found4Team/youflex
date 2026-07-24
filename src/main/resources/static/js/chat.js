@@ -22,10 +22,6 @@ let currentChatroomRole = null;
 let currentStompClient = null;
 let currentChatroomSubscription = null;
 
-// ★ 추가: 현재 참여 중인 채팅방이 하나라도 있는지 여부 (renderChatroomList가 갱신) - 참여 중인 방이
-//   없을 때는 채팅방 알림 종 아이콘의 빨간 뱃지를 숨기기 위해 사용 (뱃지 외 나머지 UI는 그대로 유지)
-let hasJoinedChatroom = false;
-
 // ★ 추가: 현재 열려있는 방에서 "여기까지는 읽었다"의 기준이 되는 chatMessageId (localStorage에 방별로 저장)
 // - null이면 이 방을 한 번도 본 적이 없다는 뜻이라, 안읽음 구분선 없이 그냥 맨 아래로 스크롤한다
 let currentRoomLastReadId = null;
@@ -83,12 +79,13 @@ function incrementChatUnreadBadge() {
     updateChatUnreadBadge();
 }
 
-/** 채팅방 전용 🔔 알림 종류별 아이콘 매핑 (입장/퇴장/경고/강퇴 - ChatroomService.resolveChatNotifType과 매칭) */
+/** 채팅방 전용 🔔 알림 종류별 아이콘 매핑 (입장/퇴장/경고/강퇴/삭제 - ChatroomService.resolveChatNotifType과 매칭) */
 function getChatNotifIcon(type) {
     if (type === "입장") return "🚪";
     if (type === "퇴장") return "👋";
     if (type === "경고") return "⚠️";
     if (type === "강퇴") return "🚫";
+    if (type === "삭제") return "🗑️";
     return "💬";
 }
 
@@ -104,9 +101,10 @@ function updateChatRoomNotifBadge() {
     const btn = document.getElementById("openNotifPanelBtn");
     if (btn) {
         let badge = btn.querySelector(".cr-notif-badge");
-        // ★ 참여 중인 채팅방이 하나도 없으면 안읽음이 있어도 종 아이콘의 빨간 뱃지는 숨김
-        //   (나머지 UI - 종 아이콘 자체, "참여 중인 채팅방이 없습니다" 문구 등 - 는 그대로 유지)
-        if (unread > 0 && hasJoinedChatroom) {
+        // ★ 지금 참여 중인 채팅방이 있는지와 무관하게, 안읽은 알림이 있으면 뱃지를 보여준다.
+        //   (예전엔 참여 중인 방이 하나도 없으면 안읽음이 있어도 숨겼는데, 방에 들어가지 않았거나
+        //   현재 소속된 방이 없어도 그 전에 온 알림은 그대로 숫자로 보여야 한다는 요구사항으로 변경)
+        if (unread > 0) {
             if (!badge) {
                 badge = document.createElement("span");
                 badge.className = "cr-notif-badge";
@@ -159,15 +157,23 @@ function removeChatRoomNotif(notifId) {
     fetch(`/api/chatroom/notifications/${notifId}`, { method: "DELETE" }).catch(err => console.error("채팅방 알림 삭제 실패:", err));
 }
 
+/** 채팅방 전용 알림(입장/퇴장/경고/강퇴)을 모두 읽음 처리 (DB에도 반영)
+ *  - 오직 🔔 패널을 직접 열 때만 호출된다. 채팅방을 보는 것만으로는 읽음 처리되지 않는다
+ *    (대화창에 문구가 보인다고 해서 알림까지 자동으로 읽음 처리되는 걸 원치 않는다는 요구사항). */
+function markChatRoomNotifsRead() {
+    if (chatRoomNotifList.every(n => n.read)) return; // 이미 다 읽음이면 불필요한 요청 생략
+    chatRoomNotifList.forEach(n => n.read = true);
+    updateChatRoomNotifBadge();
+    renderChatRoomNotifList();
+    fetch("/api/chatroom/notifications/read", { method: "POST" }).catch(err => console.error("채팅방 알림 읽음 처리 실패:", err));
+}
+
 /** 채팅방 전용 알림 슬라이드 패널 열기 – 모두 읽음 처리 (DB에도 반영) */
 function openChatRoomNotifPanel() {
     const panel = document.getElementById("chatRoomNotifPanel");
     if (!panel) return;
-    chatRoomNotifList.forEach(n => n.read = true);
-    updateChatRoomNotifBadge();
-    renderChatRoomNotifList();
+    markChatRoomNotifsRead();
     panel.classList.add("open");
-    fetch("/api/chatroom/notifications/read", { method: "POST" }).catch(err => console.error("채팅방 알림 읽음 처리 실패:", err));
 }
 
 /** 채팅방 전용 알림 슬라이드 패널 닫기 */
@@ -274,13 +280,12 @@ function renderChatroomList(rooms) {
 
     // 2. 방 목록이 아예 없어도(rooms가 빈 배열) 아래 3번부터는 그대로 진행한다.
     //    joinedRooms/availableRooms가 각각 빈 배열이 되어 섹션별 "없습니다" 문구가 정상적으로 뜨고,
-    //    "내가 참여 중인 방" 제목 + 🔔 종 아이콘 등 기본 UI 골격은 그대로 유지된다 (종 아이콘 뱃지만 hasJoinedChatroom로 제어).
+    //    "내가 참여 중인 방" 제목 + 🔔 종 아이콘 등 기본 UI 골격은 그대로 유지된다.
     rooms = rooms || [];
 
     // 3. 참여 여부(room.joined)에 따라 두 그룹으로 분류
     const joinedRooms = rooms.filter((room) => room.joined === true);
     const availableRooms = rooms.filter((room) => room.joined !== true);
-    hasJoinedChatroom = joinedRooms.length > 0;
 
     let html = "";
 
@@ -413,8 +418,17 @@ function switchTab(tabName) {
         if (messagesBox) {
             requestAnimationFrame(() => scrollChatToUnreadOrBottom(messagesBox));
         }
-        resetChatUnreadBadge();
-        markChatroomViewedNow(currentChatroomId);
+        // ★ 패널이 실제로 화면에 열려있을 때만 "일반 메시지" 읽음 처리를 한다 (안읽음 구분선 위치 확정 등).
+        //   switchToChatroom()은 페이지 로드 시 패널이 닫힌 채로 조용히 재접속할 때도 내부적으로
+        //   "채팅" 탭을 활성 탭으로 맞춰두려고 chatTab.click()을 거치는데, 이게 그대로 switchTab('chat')을
+        //   트리거한다. 여기서 isChatViewActive() 체크 없이 무조건 읽음 처리를 해버리면, 사용자가
+        //   실제로 보지도 않았는데 페이지 로드/조용한 재접속마다 안읽음 메시지가 곧바로 읽음 처리되어버린다.
+        //   ★ 채팅방 알림(입장/퇴장/경고/강퇴, B)은 여기서 자동으로 읽음 처리하지 않는다 - 🔔 버튼을
+        //   직접 눌러야만 읽음 처리되도록 함 (채팅방을 보기만 해도 알림까지 같이 읽음 처리되는 걸 원치 않음).
+        if (isChatViewActive()) {
+            resetChatUnreadBadge();
+            markChatroomViewedNow(currentChatroomId);
+        }
     }
 }
 
@@ -469,21 +483,32 @@ async function loadChatroomList(autoEnterMyRoom = true) {
 // ==========================================================================
 // ! 웹소켓(STOMP) 연결 및 실시간 채널 구독 관리 함수 
 // ==========================================================================
+// ★ initChatroomChat()이 initChatroomSocket()을 직접 한 번, loadChatroomList(true)->switchToChatroom()을 통해
+//   또 한 번(둘 다 페이지 로드 시점에) 거의 동시에 호출한다. 예전에는 아래 guard가 currentStompClient.connected만
+//   확인했는데, 첫 번째 연결이 핸드셰이크 중(아직 connected=false)인 상태에서 두 번째 호출이 들어오면 이 guard를
+//   통과하지 못해 SockJS/STOMP 커넥션을 통째로 하나 더 만들어버렸다. 그 결과 소켓이 매 페이지 로드마다 중복
+//   연결되고, 두 커넥션의 connect 콜백이 같은 전역 변수 currentStompClient를 두고 경합하면서 이미 교체되어버린
+//   (죽은) 커넥션에 subscribe를 시도해 "InvalidStateError: The connection has not been established yet" 콘솔
+//   에러가 발생했다. isConnectingSocket 플래그로 "연결 시도 중"까지 guard에 포함시켜 중복 생성을 막는다.
+let isConnectingSocket = false;
+
 function initChatroomSocket() {
     if (typeof SockJS === "undefined" || typeof Stomp === "undefined") {
         console.warn("SockJS/Stomp 라이브러리가 로드되지 않았습니다.");
         return null;
     }
 
-    if (currentStompClient && currentStompClient.connected) {
+    if (currentStompClient && (currentStompClient.connected || isConnectingSocket)) {
         return currentStompClient;
     }
 
+    isConnectingSocket = true;
     const socket = new SockJS('/ws-connect');
     currentStompClient = Stomp.over(socket);
     currentStompClient.debug = null;
 
     currentStompClient.connect({}, () => {
+        isConnectingSocket = false;
         currentStompClient.subscribe('/sub/chatroom-list', (message) => {
             const rooms = JSON.parse(message.body);
             renderChatroomList(rooms);
@@ -496,12 +521,10 @@ function initChatroomSocket() {
             currentStompClient.subscribe(`/sub/member/${currentMemberId}/notice`, (message) => {
                 const notice = JSON.parse(message.body);
 
-                // 알림 도착 시 채팅 패널이 닫혀있으면 💬 뱃지 +1
-                const chatPanel = document.getElementById("chatroomPanel");
-                if (!chatPanel || !chatPanel.classList.contains("open")) {
-                    incrementChatUnreadBadge();
-                }
-
+                // ★ 여기서는 💬 뱃지를 올리지 않는다 - 같은 경고/강퇴 이벤트가 채팅방 브로드캐스트
+                //   시스템 메시지(appendChatMessage)를 통해 이미 B(알림 안읽음)로 카운트되고 있어서,
+                //   여기서도 incrementChatUnreadBadge()를 부르면 같은 사건이 A+B로 중복 카운팅됐었다.
+                //   이 채널은 팝업 안내 + 강제퇴장 시 세션 정리 용도로만 쓴다.
                 if (notice.type === "WARNING") {
                     // ★ 개인 전용 채널로는 더 이상 🔔 알림을 추가하지 않음 - 채팅방 브로드캐스트 시스템 메시지(appendChatMessage)로만
                     //   모두에게 동일하게 보이는 알림 하나만 남긴다(중복 제거). 여기서는 즉시 안내 팝업만 띄움.
@@ -531,6 +554,9 @@ function initChatroomSocket() {
                 addNotification(getHeaderNotifIcon(notif.type), notif.message, notif.createdAt, notif.id);
             });
         }
+    }, () => {
+        // ★ 연결 실패(네트워크 문제 등) 시에도 플래그를 반드시 풀어줘야, 다음 시도에서 다시 연결을 걸 수 있다
+        isConnectingSocket = false;
     });
 
     return currentStompClient;
@@ -551,35 +577,41 @@ function subscribeChatroom(chatroomId) {
 // ==========================================================================
 // ! 화면에 실시간 채팅 말풍선 렌더링 함수 추가 !
 // ==========================================================================
+/** 시스템(입장/퇴장/경고/강퇴) 메시지인지 판별 - appendChatMessage() 렌더링과 switchToChatroom()의
+ *  일반 메시지 안읽음(A) 카운트 양쪽에서 공용으로 사용한다.
+ *  ★ chat_message 테이블에는 member_name 컬럼이 없어서 /messages 조회 시 memberName은 항상 member
+ *  테이블과 JOIN한 "실제 행위자 이름"으로 내려온다 (절대 "SYSTEM"이 아님) - 그래서 memberName 비교만으로는
+ *  구분이 안 되고, 안내 멘트 문구로 판별해야 한다. */
+function isSystemChatMessage(msg) {
+    const content = msg.chatMessageContent || "";
+    return msg.memberName === "SYSTEM" ||
+        !msg.memberId ||
+        content.includes("입장했습니다") ||
+        content.includes("퇴장했습니다") ||
+        content.includes("경고를 받았습니다") ||
+        content.includes("⚠️") ||
+        content.includes("강제퇴장") ||
+        content.includes("채팅방이 삭제되었습니다");
+}
+
 /** @param isHistoryReplay switchToChatroom()이 이전 대화 내역을 한꺼번에 다시 그릴 때 true.
  *  이때는 뱃지 증가/알림 재조회처럼 "새로 도착했을 때만" 필요한 부수효과를 건너뛴다. */
 function appendChatMessage(msgDTO, isHistoryReplay = false) {
     const messagesBox = document.getElementById("chatroomMessages");
     if (!messagesBox) return;
 
-    // ★ 0. 중복 메시지 렌더링 차단 (ID 기반 중복 검사)
+    // ★ 중복 메시지 렌더링 차단 (ID 기반 중복 검사) - 실제 채팅 메시지는 chat_message_id가 항상 고유하므로
+    //   이 검사 하나로 진짜 중복(같은 메시지 재수신)은 충분히 걸러진다.
+    //   ※ 예전에는 여기에 더해 "직전 메시지와 텍스트가 완전히 같으면 중복으로 간주"하는 검사도 있었는데,
+    //   그건 서로 다른 진짜 이벤트인데 우연히 문구가 같아지는 경우(같은 대상에게 같은 사유로 경고를 줬는데
+    //   누적 횟수까지 같았던 경우 등)에도 오탐으로 새 메시지를 통째로 씹어버리는 문제가 있어 제거했다.
     if (msgDTO.chatMessageId) {
         const existingMsg = messagesBox.querySelector(`[data-message-id="${msgDTO.chatMessageId}"]`);
         if (existingMsg) return;
     }
 
     const content = msgDTO.chatMessageContent || "";
-
-    // ★ 시스템 메시지 여부 판단 (memberName이 SYSTEM이거나, 입/퇴장/강퇴/경고 안내 멘트인 경우)
-    const isWarnMsg = content.includes("경고를 받았습니다") || content.includes("⚠️") || content.includes("강제퇴장");
-    const isSystemMsg = msgDTO.memberName === "SYSTEM" ||
-        !msgDTO.memberId ||
-        content.includes("입장했습니다") ||
-        content.includes("퇴장했습니다") ||
-        isWarnMsg;
-
-    // ★ 시스템 메시지 텍스트 중복 방지 (바로 직전 메시지와 텍스트가 일치하는 경우 중복 렌더링 방지)
-    if (isSystemMsg && messagesBox.lastElementChild) {
-        const lastText = messagesBox.lastElementChild.textContent || "";
-        if (lastText.trim() === content.trim()) {
-            return;
-        }
-    }
+    const isSystemMsg = isSystemChatMessage(msgDTO);
 
     // ★ 수정: 이름(memberName) 대신 회원 고유 ID(memberId)로 내 메시지인지 비교
     const memberIdInput = document.getElementById("currentMemberId");
@@ -594,12 +626,17 @@ function appendChatMessage(msgDTO, isHistoryReplay = false) {
     }
 
     if (isSystemMsg) {
+        const isWarnMsg = content.includes("경고를 받았습니다") || content.includes("⚠️") || content.includes("강제퇴장") || content.includes("채팅방이 삭제되었습니다");
         msgDiv.className = isWarnMsg ? "chat-msg system warning" : "chat-msg system";
         msgDiv.textContent = content;
     } else {
         msgDiv.className = isMe ? "chat-msg me" : "chat-msg";
+        // ★ 마이페이지 프로필 사진과 연동 - member_profile_img가 있으면 아바타에 그려주고, 없으면 빈 원(css 기본 배경)만 표시
+        const avatarImgHtml = msgDTO.memberProfileImg
+            ? `<img src="/upload/${msgDTO.memberProfileImg}" alt="">`
+            : "";
         msgDiv.innerHTML = `
-            <div class="avatar"></div>
+            <div class="avatar">${avatarImgHtml}</div>
             <div class="message-container">
                 <div class="sender-name">${msgDTO.memberName}</div>
                 <div class="bubble"></div>
@@ -635,6 +672,8 @@ function appendChatMessage(msgDTO, isHistoryReplay = false) {
 
     // ★ 채팅방 전용 🔔 팝업은 입장/퇴장/경고/강퇴 시스템 메시지에만 반응 (일반 채팅 메시지는 알림 대상 아님)
     //   ChatroomService가 이미 notifications 테이블에 적재해 두었으므로, DB에서 다시 불러와 실제 id로 동기화한다.
+    //   ★ 채팅방을 보고 있는 중이어도 여기서 자동으로 읽음 처리하지 않는다 - 🔔 버튼을 직접 눌러야만
+    //   읽음 처리되도록 함 (대화창에 문구가 보인다고 해서 알림까지 자동으로 읽음 처리되길 원치 않음).
     if (isSystemMsg) {
         loadChatRoomNotificationsFromServer();
         refreshChatroomMembersBar(); // 입장/퇴장/강퇴로 참여자 구성이 바뀌었을 수 있으므로 실시간 참여자 바도 갱신
@@ -727,9 +766,18 @@ async function switchToChatroom(chatroomId, chatroomTitle) {
             // ★ 새로고침해도 실제 안읽은 메시지 수가 유지되도록, 저장된 마지막 읽음 위치 기준으로
             //   다시 계산해서 헤더 💬 뱃지에 반영한다 (unreadChatCount는 페이지 로드마다 0으로 초기화되는
             //   메모리 변수라 그것만으로는 새로고침 후 안읽음 개수를 알 수 없음)
-            unreadChatCount = readIdBeforeThisView !== null
-                ? messageList.filter(m => m.memberId !== myMemberId && m.chatMessageId > readIdBeforeThisView).length
-                : 0;
+            //   readIdBeforeThisView가 null이면(이 브라우저에서 이 방을 한 번도 연 적 없음) 남이 보낸
+            //   메시지는 전부 안읽음으로 센다 - 예전에는 이 경우 무조건 0으로 처리해서, 방을 한 번도
+            //   열어본 적 없는 상태로 메인 페이지에 접속하면 실제로는 안읽은 메시지가 있어도 헤더
+            //   배지가 계속 0으로 보이는 문제가 있었음.
+            //   ★ 입장/퇴장/경고/강퇴 시스템 메시지는 chat_message 테이블에 행위자의 실제 memberId로
+            //   저장되기 때문에(member_name 컬럼 자체가 없어 memberName은 항상 JOIN된 실제 이름으로 내려옴,
+            //   "SYSTEM"이 아님) memberId 필터만으로는 안 걸러진다. isSystemChatMessage()로 내용을 보고
+            //   판별해서 제외해야 한다 - 안 그러면 chatRoomNotifList(B) 쪽에서 이미 세는 같은 사건이
+            //   여기(A)서 또 세져서 배지에 2번 잡히는 중복 카운팅이 된다.
+            unreadChatCount = messageList.filter(m => m.memberId !== myMemberId
+                && !isSystemChatMessage(m)
+                && (readIdBeforeThisView === null || m.chatMessageId > readIdBeforeThisView)).length;
             updateChatUnreadBadge();
         }
     } catch (error) {
@@ -769,6 +817,7 @@ async function switchToChatroom(chatroomId, chatroomTitle) {
     // ★ 채팅 패널이 실제로 열려서 지금 보고 있는 상태일 때만 "여기까지 읽음"으로 확정한다
     //   (loadChatroomList(true)의 페이지 로드 시 조용한 자동 재접속에서는 패널이 닫혀있으므로 건드리지 않음 -
     //    그래야 새로고침만으로 안읽음이 사라지지 않고, 다음에 진짜로 열었을 때 정확히 반영됨)
+    //   ★ 채팅방 알림(B)은 여기서 자동으로 읽음 처리하지 않는다 - 🔔 버튼을 직접 눌러야만 읽음 처리됨
     if (isChatViewActive()) {
         resetChatUnreadBadge();
         if (latestMessageIdInRoom !== null) {
@@ -870,7 +919,12 @@ async function leaveChatroom() {
         alert("입장한 채팅방이 없습니다.");
         return;
     }
-    if (!confirm("채팅방에서 나가시겠습니까?")) return;
+    // ★ 방장이 나가면 채팅방 자체가 삭제되고 대화 내용도 전부 사라지므로(project-plan.md 정책),
+    //   일반 참여자의 안내 문구와 다르게 그 사실을 명확히 알려주고 한 번 더 확인받는다.
+    const confirmMsg = currentChatroomRole === "방장"
+        ? "방장이 나가면 채팅방이 삭제되며, 대화 내용이 모두 사라집니다.\n정말 나가시겠습니까?"
+        : "채팅방에서 나가시겠습니까?";
+    if (!confirm(confirmMsg)) return;
 
     try {
         const response = await fetch(`/api/chatroom/${currentChatroomId}/leave`, {

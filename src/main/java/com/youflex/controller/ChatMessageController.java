@@ -58,6 +58,9 @@ public class ChatMessageController {
         String memberName = chatMessageMapper.selectMemberName(message.getMemberId());
         message.setMemberName(memberName != null ? memberName : "(알 수 없음)");
 
+        // ★ 마이페이지 프로필 사진과 연동 - 실시간 메시지에도 채워서 보냄
+        message.setMemberProfileImg(chatMessageMapper.selectMemberProfileImg(message.getMemberId()));
+
         // 3. 브로드캐스트
         messagingTemplate.convertAndSend("/sub/chatroom/" + message.getChatroomId(), message);
     }
