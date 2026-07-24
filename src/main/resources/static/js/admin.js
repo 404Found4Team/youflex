@@ -185,11 +185,27 @@ function renderMemberRow(m) {
   return tr;
 }
 
+// 회원 목록 페이지네이션 - 10페이지씩 블록으로 묶어서 표시하고, 블록 단위(«/»)로 한 번에 이동하는 버튼 제공
+const MEMBER_PAGE_BLOCK_SIZE = 10;
+
 function renderMemberPagination(totalPages, currentPage) {
   const paginationEl = document.getElementById("memberPagination");
   if (!paginationEl) return;
   paginationEl.innerHTML = "";
-  for (let i = 1; i <= totalPages; i++) {
+
+  const currentBlock = Math.ceil(currentPage / MEMBER_PAGE_BLOCK_SIZE);
+  const blockStart = (currentBlock - 1) * MEMBER_PAGE_BLOCK_SIZE + 1;
+  const blockEnd = Math.min(blockStart + MEMBER_PAGE_BLOCK_SIZE - 1, totalPages);
+
+  // 이전 10페이지 블록으로 이동 (첫 블록이면 비활성화)
+  const prevBtn = document.createElement("button");
+  prevBtn.type = "button";
+  prevBtn.textContent = "«";
+  prevBtn.disabled = blockStart === 1;
+  prevBtn.addEventListener("click", () => loadMemberList(blockStart - 1));
+  paginationEl.appendChild(prevBtn);
+
+  for (let i = blockStart; i <= blockEnd; i++) {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.textContent = i;
@@ -197,6 +213,14 @@ function renderMemberPagination(totalPages, currentPage) {
     btn.addEventListener("click", () => loadMemberList(i));
     paginationEl.appendChild(btn);
   }
+
+  // 다음 10페이지 블록으로 이동 (마지막 블록이면 비활성화)
+  const nextBtn = document.createElement("button");
+  nextBtn.type = "button";
+  nextBtn.textContent = "»";
+  nextBtn.disabled = blockEnd === totalPages;
+  nextBtn.addEventListener("click", () => loadMemberList(blockEnd + 1));
+  paginationEl.appendChild(nextBtn);
 }
 
 async function loadMemberList(page) {
@@ -235,7 +259,7 @@ async function loadMemberList(page) {
 
   // 서버가 최초 렌더한 1페이지 기준 총 개수/페이지 크기로 페이지네이션 버튼만 먼저 그림
   const totalCount = Number(table.dataset.totalCount || 0);
-  const pageSize = Number(table.dataset.pageSize || 5);
+  const pageSize = Number(table.dataset.pageSize || 10);
   renderMemberPagination(Math.max(1, Math.ceil(totalCount / pageSize)), 1);
 })();
 
@@ -552,6 +576,17 @@ document.querySelectorAll(".report-subtabs button").forEach((btn) => {
     btn.classList.add("active");
     document.querySelectorAll("[data-report-subpanel]").forEach((panel) => {
       panel.style.display = panel.dataset.reportSubpanel === btn.dataset.reportSubtab ? "" : "none";
+    });
+  });
+});
+
+// Q&A 답변 탭의 답변대기/답변완료 서브탭 (위 report-subtabs와 동일한 방식, attribute만 분리)
+document.querySelectorAll(".qna-subtabs button").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".qna-subtabs button").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    document.querySelectorAll("[data-qna-subpanel]").forEach((panel) => {
+      panel.style.display = panel.dataset.qnaSubpanel === btn.dataset.qnaSubtab ? "" : "none";
     });
   });
 });
