@@ -23,7 +23,10 @@
                     <when test="period == '3m'">AND r.review_created_at &gt;= DATE_SUB(NOW(), INTERVAL 3 MONTH)</when>
                 </choose>
             </if>
-            <if test="sort == 'highlight'">AND r.review_highlighted = 'Y'</if>
+            <!-- 삭제: <if test="sort == 'highlight'">AND r.review_highlighted = 'Y'</if>
+                 [수정] sort == 'highlight' 전용 조건 -> highlightOnly 플래그 기준으로 변경.
+                 sort가 이후에 latest/likes/views로 바뀌어도 이 필터는 그대로 유지되게 하기 위함 -->
+            <if test="highlightOnly">AND r.review_highlighted = 'Y'</if>
             <if test="platform != null and platform != '' and platform != 'all'">
                 <choose>
                     <when test="platform == 'netflix'">AND r.review_platform = '넷플릭스'</when>
@@ -71,7 +74,10 @@
                     <when test="period == '3m'">AND r.review_created_at &gt;= DATE_SUB(NOW(), INTERVAL 3 MONTH)</when>
                 </choose>
             </if>
-            <if test="sort == 'highlight'">AND r.review_highlighted = 'Y'</if>
+            <!-- 삭제: <if test="sort == 'highlight'">AND r.review_highlighted = 'Y'</if>
+                 [수정] sort == 'highlight' 전용 조건 -> highlightOnly 플래그 기준으로 변경.
+                 sort가 이후에 latest/likes/views로 바뀌어도 이 필터는 그대로 유지되게 하기 위함 -->
+            <if test="highlightOnly">AND r.review_highlighted = 'Y'</if>
             <if test="platform != null and platform != '' and platform != 'all'">
                 <choose>
                     <when test="platform == 'netflix'">AND r.review_platform = '넷플릭스'</when>

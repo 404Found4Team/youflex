@@ -3,11 +3,51 @@ document.getElementById('advToggleBtn').addEventListener('click', () => {
 });
 
 // ===== 정렬 버튼: 클릭 시 sort 파라미터를 붙여 목록 재요청 =====
-document.querySelectorAll('.sort-group button').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.sort-group button').forEach(b => b.classList.remove('active'));
+// [수정] 기존 'button'만 선택하던 것에서 'a' 태그 및 '.highlight' 요소도 선택되도록 확장
+const sortButtons = document.querySelectorAll('.sort-group button, .sort-group a, .category-nav .highlight');
+
+// ===== 페이지 로드 시 현재 URL의 sort 값에 맞춰 active 클래스 부여 =====
+function applyActiveSortFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const currentSort = params.get('sort'); // 없으면 null
+
+    sortButtons.forEach(btn => {
+        const btnSort = btn.dataset.sort || (btn.classList.contains('highlight') ? 'highlight' : null);
+        if (btnSort && btnSort === currentSort) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+}
+applyActiveSortFromUrl();
+
+sortButtons.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        // [수정] a 태그일 경우 기본 페이지 이동 동작 방지
+        if (btn.tagName === 'A' && (btn.dataset.sort || btn.classList.contains('highlight'))) {
+            e.preventDefault();
+        }
+
+        // [수정] 클릭 시 기존 active 클래스를 제거하고 현재 클릭한 버튼에 active 추가
+        sortButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        goToFilteredList({ sort: btn.dataset.sort });
+
+        // [수정] data-sort 값이 있거나 highlight 클래스가 있으면 sort 파라미터로 처리
+        const sortVal = btn.dataset.sort || (btn.classList.contains('highlight') ? 'highlight' : null);
+        if (sortVal) {
+            // [수정] 하이라이트는 특정 플랫폼이 아닌 "전체 게시글" 중 review_highlighted='Y'가 대상이므로,
+            //        이전에 선택돼 있던 platform 필터가 남아있으면 결과가 그 플랫폼으로만 좁혀지는 버그가 있었음 -> 클릭 시 초기화
+            const overrides = { sort: sortVal };
+            if (sortVal === 'highlight') {
+                overrides.platform = null;
+                // [추가] 하이라이트 진입 시 highlightOnly on. 이후 최신순/좋아요순/조회수순을 눌러도
+                //        overrides에 highlightOnly가 없으면 goToFilteredList가 URL의 값을 그대로 유지하므로
+                //        하이라이트 필터가 계속 살아있음 (platform과 동일한 방식)
+                overrides.highlightOnly = true;	// 추가: 하이라이트 진입 시 필터 on
+            }
+            goToFilteredList(overrides);
+        }
     });
 });
 
@@ -118,6 +158,16 @@ function goToFilteredList(overrides = {}) {
     if (overrides.page !== undefined) params.set('page', String(overrides.page));
 
     if (overrides.sort !== undefined) params.set('sort', overrides.sort);
+    if (overrides.platform !== undefined) {
+        if (overrides.platform) params.set('platform', overrides.platform);
+        else params.delete('platform');
+    }
+    // [추가] highlightOnly는 overrides에 없으면 아예 건드리지 않아서(=URL에 남아있던 값 그대로 유지)
+    //        최신순/좋아요순/조회수순 클릭 시에도 하이라이트 필터가 계속 유지되게 함
+    if (overrides.highlightOnly !== undefined) {
+        if (overrides.highlightOnly) params.set('highlightOnly', 'true');
+        else params.delete('highlightOnly');
+    }
     if (overrides.keyword !== undefined) {
         if (overrides.keyword) params.set('keyword', overrides.keyword);
         else params.delete('keyword');
@@ -140,29 +190,37 @@ function goToFilteredList(overrides = {}) {
     }
 	
 	window.location.href = `${window.location.pathname}?${params.toString()}`;
-
-	document.addEventListener('click', (event) => {
-	    const button = event.target.closest('button.page-btn');
-	    if (!button || button.disabled) return;
-	    if (!button.closest('.pagination')) return;
-
-	    const pageText = button.textContent.trim();
-	    const currentPage = Number(new URLSearchParams(window.location.search).get('page') || '1');
-	    const totalPages = Number(button.closest('.pagination').dataset.totalPages || '0');
-
-	    if (pageText === '‹') {
-	        if (currentPage > 1) goToFilteredList({ page: currentPage - 1 });
-	        return;
-	    }
-
-	    if (pageText === '›') {
-	        if (currentPage < totalPages) goToFilteredList({ page: currentPage + 1 });
-	        return;
-	    }
-
-	    const pageNumber = Number(pageText);
-	    if (!Number.isNaN(pageNumber) && pageNumber <= totalPages) {
-	        goToFilteredList({ page: pageNumber });
-	    }
-	});
 }
+
+// ===== 페이지네이션 버튼 클릭 -> 페이지 이동 =====
+// [수정] 기존에는 이 리스너가 goToFilteredList() 함수 안(그것도 navigate 코드보다 뒤)에 등록되어 있어서,
+//        goToFilteredList가 한 번도 호출되지 않은 최초 페이지 로드 상태에서는 페이지네이션 버튼에
+//        클릭 이벤트가 전혀 걸려있지 않아 눌러도 아무 반응이 없던 버그가 있었음 -> 최상위로 이동해 페이지 로드 시 한 번만 등록
+document.addEventListener('click', (event) => {
+    const button = event.target.closest('button.page-btn');
+    if (!button || button.disabled) return;
+    if (!button.closest('.pagination')) return;
+
+    const pageText = button.textContent.trim();
+    const totalPages = Number(button.closest('.pagination').dataset.totalPages || '0');
+    const blockStart = Number(button.closest('.pagination').dataset.blockStart || '1');
+    const blockEnd = Number(button.closest('.pagination').dataset.blockEnd || '1');
+
+    // [수정] 관리자 회원관리 탭과 동일하게 1페이지씩 이동하던 ‹/› 대신 10페이지 블록 단위로 이동하는 «/»로 교체
+    // 삭제: if (pageText === '‹') { if (currentPage > 1) goToFilteredList({ page: currentPage - 1 }); return; }
+    // 삭제: if (pageText === '›') { if (currentPage < totalPages) goToFilteredList({ page: currentPage + 1 }); return; }
+    if (pageText === '«') {
+        if (blockStart > 1) goToFilteredList({ page: blockStart - 1 });
+        return;
+    }
+
+    if (pageText === '»') {
+        if (blockEnd < totalPages) goToFilteredList({ page: blockEnd + 1 });
+        return;
+    }
+
+    const pageNumber = Number(pageText);
+    if (!Number.isNaN(pageNumber) && pageNumber <= totalPages) {
+        goToFilteredList({ page: pageNumber });
+    }
+});
