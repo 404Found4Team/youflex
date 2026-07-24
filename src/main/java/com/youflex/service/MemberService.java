@@ -169,7 +169,7 @@ public class MemberService {
 
     // ===================== 관리자 - 회원 관리 =====================
 
-    private static final int MEMBER_PAGE_SIZE = 5;
+    private static final int MEMBER_PAGE_SIZE = 10;
 
     // 회원 목록(정상 회원) 검색 + 페이징 조회. page는 1부터 시작.
     public List<MemberDTO> getMemberList(String keyword, int page) {

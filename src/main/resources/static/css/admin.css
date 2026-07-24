@@ -23,13 +23,14 @@
 .qna-subtabs button { padding:8px 14px; border-radius:6px; border:1px solid var(--border); background:none; color:var(--text-2); font-size:13px; font-weight:600; }
 .qna-subtabs button.active { color:var(--text-0); border-color:var(--accent); background:rgba(230,57,70,0.1); }
 
-/* ---------- 회원 검색창 + 페이지네이션(회원목록 5명씩 보기) ---------- */
+/* ---------- 회원 검색창 + 페이지네이션(회원목록 10명씩 보기, 10페이지 블록 단위 이동) ---------- */
 .member-search-row { display:flex; gap:8px; margin-top:16px; }
 .member-search-row input { flex:1; max-width:320px; background:var(--bg-2); border:1px solid var(--border); border-radius:6px; padding:10px; color:#fff; font-size:13px; }
 .member-search-row input:focus { outline:none; border-color:var(--accent); }
 .member-pagination { display:flex; justify-content:center; gap:6px; margin:20px 0; }
 .member-pagination button { width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:6px; border:1px solid var(--border); background:none; color:var(--text-1); font-size:13px; }
 .member-pagination button.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+.member-pagination button:disabled { opacity:0.35; cursor:not-allowed; }
 
 /* ---------- 대시보드 요약 (오늘 가입자수/탈퇴자수/게시글수/누적회원/미처리 신고) 카드 5개 ---------- */
 .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-top:20px; }
