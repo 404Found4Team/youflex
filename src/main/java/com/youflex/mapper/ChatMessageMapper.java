@@ -20,6 +20,9 @@ public interface ChatMessageMapper {
      */
 	String selectMemberName(@Param("memberId") int memberId);
 
+    /** ★ 실시간 브로드캐스트 시 프로필 사진(마이페이지 member_profile_img와 동일)을 채워 보내기 위한 단건 조회 */
+    String selectMemberProfileImg(@Param("memberId") int memberId);
+
     /** ★ 추가: 경고 부여 시 대상 메시지의 chatroomId/memberId를 확인하기 위한 단건 조회 */
     ChatMessageDTO selectChatMessageById(@Param("chatMessageId") int chatMessageId);
 }
