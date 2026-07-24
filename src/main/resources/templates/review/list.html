@@ -64,7 +64,10 @@
 	    - 오른쪽: 작성자 이름 & 작성일자
 	    ===================================================================
 	  -->
-		<div class="post-row-list mt-16" th:if="${sort != 'highlight'}">
+		<!-- 삭제: <div class="post-row-list mt-16" th:if="${sort != 'highlight'}">
+		     [수정] sort != 'highlight' -> !highlightOnly : 하이라이트 상태에서 최신순/좋아요순/조회수순으로
+		     정렬 기준(sort)을 바꿔도 이 조건이 계속 false로 유지되어(=행형 목록이 아니라) 카드형이 그대로 보이게 함 -->
+		<div class="post-row-list mt-16" th:if="${!highlightOnly}">
 
 			<!-- Thymeleaf 반복문 (Spring Controller에서 Pageable size=10 설정 시 한 페이지 10개 출력) -->
 			<a class="post-row" th:each="post : ${postList}" th:href="@{/review/{id}(id=${post.reviewId})}">
@@ -116,7 +119,10 @@
 	    - '하이라이트' 버튼을 눌렀을 때만 이 레이아웃으로 표시
 	    ===================================================================
 	  -->
-		<div class="highlight-grid mt-16" th:if="${sort == 'highlight'}">
+		<!-- 삭제: <div class="highlight-grid mt-16" th:if="${sort == 'highlight'}">
+		     [수정] sort == 'highlight' -> highlightOnly : highlightOnly가 켜져 있는 한
+		     최신순/좋아요순/조회수순으로 sort가 바뀌어도 카드형 레이아웃이 계속 유지됨 -->
+		<div class="highlight-grid mt-16" th:if="${highlightOnly}">
 			<a class="highlight-card" th:each="post : ${postList}" th:href="@{/review/{id}(id=${post.reviewId})}">
 				<div class="highlight-thumb">
 					<img th:if="${post.reviewImg != null and !#strings.isEmpty(post.reviewImg)}"
@@ -167,15 +173,16 @@
 
 		<!-- 페이지네이션 (페이지 당 10개 기준) -->
 		<div class="pagination mt-16" th:if="${totalPages != null and totalPages > 0}"
-			th:attr="data-total-pages=${totalPages}">
-			<button type="button" class="page-btn prev" aria-label="이전 페이지" th:disabled="${currentPage <= 1}">‹</button>
+			th:attr="data-total-pages=${totalPages},data-block-start=${blockStart},data-block-end=${blockEnd}">
+			<!-- [수정] 관리자 회원관리 탭과 동일한 구조로 변경: 1페이지씩 이동하던 ‹/› 대신
+			     10페이지 블록 단위로 이동하는 «/» + 블록 내 숫자 버튼만 표시 -->
+			<button type="button" class="page-btn block-prev" aria-label="이전 10페이지" th:disabled="${blockStart <= 1}">«</button>
 
-			<button type="button" th:each="pageNumber : ${#numbers.sequence(1, totalPages)}"
+			<button type="button" th:each="pageNumber : ${#numbers.sequence(blockStart, blockEnd)}"
 				th:class="${pageNumber == currentPage} ? 'page-btn active' : 'page-btn'"
 				th:text="${pageNumber}">1</button>
 
-			<button type="button" class="page-btn next" aria-label="다음 페이지"
-				th:disabled="${currentPage >= totalPages}">›</button>
+			<button type="button" class="page-btn block-next" aria-label="다음 10페이지" th:disabled="${blockEnd >= totalPages}">»</button>
 		</div>
 
 	</main>

@@ -447,12 +447,31 @@ function initCategoryNav() {
 
     const pathname = location.pathname;
     const isReviewList = pathname.endsWith("/review/list");
+    const searchParams = new URLSearchParams(location.search);
+    // 삭제: const current = isReviewList ? (searchParams.get("sort") === "highlight" ? "highlight" : searchParams.get("platform") || "all") : ...
+    // [수정] sort==='highlight' -> highlightOnly==='true' 기준으로 변경.
+    //        highlightOnly는 sort와 분리된 필터라서, 하이라이트 상태에서 최신순/좋아요순/조회수순을
+    //        눌러 sort가 바뀌어도(=highlightOnly는 그대로 true) '하이라이트' 탭이 계속 활성 표시됨
     const current = isReviewList
-        ? new URLSearchParams(location.search).get("platform") || "all"
+        ? (searchParams.get("highlightOnly") === "true" ? "highlight" : searchParams.get("platform") || "all")
         : document.body.dataset.navCurrent || "";
 
     nav.querySelectorAll("a[data-nav]").forEach((a) => {
         a.classList.toggle("active", a.dataset.nav === current);
+    });
+}
+
+// 헤더 통합검색 - 검색어 없이 돋보기만 눌러 전체 게시글이 조회되는 것을 막고, 입력을 유도하는 alert 표시
+function initHeaderSearch() {
+    const searchForm = document.querySelector(".search-bar");
+    if (!searchForm) return;
+
+    searchForm.addEventListener("submit", (e) => {
+        const keywordInput = searchForm.querySelector('input[name="keyword"]');
+        if (!keywordInput || keywordInput.value.trim() === "") {
+            e.preventDefault();
+            alert("검색어를 입력해주세요.");
+        }
     });
 }
 
@@ -482,6 +501,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initHeroSlider();
     initCategoryNav();
     initReviewListSort();
+    initHeaderSearch();
 
     // 오버레이 3종 (퀴즈 / 채팅방 / 알림) 초기화
     initOverlay("quizPanel", "quizBackdrop", ["quizFab"], ["quizClose"], null, true);

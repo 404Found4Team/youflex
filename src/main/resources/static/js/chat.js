@@ -669,6 +669,9 @@ function scrollChatToUnreadOrBottom(messagesBox) {
     }
 }
 
+/** 서버(/api/chatroom/{id}/messages)가 이 회원이 "현재" 입장한 시각 이후 메시지만 내려주므로,
+ *  참여 이전 대화 내역은 항상 자동으로 제외된 채 내려온다 - 신규 참여/재입장 여부를 클라이언트가
+ *  따로 구분해서 숨길 필요가 없다. */
 async function switchToChatroom(chatroomId, chatroomTitle) {
     if (!chatroomId) return;
 
@@ -840,7 +843,10 @@ async function enterChatroom(chatroomId, chatroomTitle) {
         isEnteringChatroom = false;
     }
 
-    loadChatroomList();
+    // ★ autoEnterMyRoom(기본 true)을 그대로 두면 loadChatroomList가 방금 입장한 이 방을 "내 방"으로 찾아내
+    //   자체적으로 switchToChatroom을 또 호출해버려서, 아래 호출과 경합(race)하다가 이력이 다시 그려지는
+    //   문제가 있었다. 여기서는 이미 직접 switchToChatroom을 호출하므로 false로 넘겨 목록만 새로고침한다.
+    loadChatroomList(false);
     switchToChatroom(chatroomId, chatroomTitle);
 
     if (isNewJoin) {
@@ -1083,13 +1089,11 @@ function initChatroomChat() {
             if (!btn) return;
             const chatroomId = btn.dataset.roomId;
             const chatroomTitle = btn.dataset.roomTitle;
-            const alreadyJoined = btn.dataset.joined === "true";
 
-            if (alreadyJoined) {
-                switchToChatroom(chatroomId, chatroomTitle);
-            } else {
-                enterChatroom(chatroomId, chatroomTitle);
-            }
+            // ★ 이미 참여 중인 방이어도 항상 enterChatroom()을 거친다 - 서버가 이미 참여중인 회원은
+            //   /enter에서 아무 부수효과 없이 isNew=false만 응답해주므로 안전하고, data-joined 값의
+            //   신선도에 의존해 switchToChatroom을 직접 호출하는 것보다 안전하다.
+            enterChatroom(chatroomId, chatroomTitle);
         });
     }
 

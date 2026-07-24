@@ -65,7 +65,7 @@ if (genreDoneBtn && genreModal) {
         }
 
         genreModal.classList.remove('open');
-        alert(`선택하신 ${selectedGenres.length}개의 장르가 임시 매핑되었습니다.`);
+        alert(`선택하신 ${selectedGenres.length}개의 장르가 선택되었습니다.`);
     });
 }
 
