@@ -197,11 +197,11 @@ function renderMemberPagination(totalPages, currentPage) {
   const blockStart = (currentBlock - 1) * MEMBER_PAGE_BLOCK_SIZE + 1;
   const blockEnd = Math.min(blockStart + MEMBER_PAGE_BLOCK_SIZE - 1, totalPages);
 
-  // 이전 10페이지 블록으로 이동 (첫 블록이면 비활성화)
+  // 이전 10페이지 블록으로 이동 (첫 블록이면 눌러도 어차피 갈 곳이 없으므로 숨김)
   const prevBtn = document.createElement("button");
   prevBtn.type = "button";
   prevBtn.textContent = "«";
-  prevBtn.disabled = blockStart === 1;
+  prevBtn.hidden = blockStart === 1;
   prevBtn.addEventListener("click", () => loadMemberList(blockStart - 1));
   paginationEl.appendChild(prevBtn);
 
@@ -214,11 +214,11 @@ function renderMemberPagination(totalPages, currentPage) {
     paginationEl.appendChild(btn);
   }
 
-  // 다음 10페이지 블록으로 이동 (마지막 블록이면 비활성화)
+  // 다음 10페이지 블록으로 이동 (마지막 블록이면 눌러도 어차피 갈 곳이 없으므로 숨김)
   const nextBtn = document.createElement("button");
   nextBtn.type = "button";
   nextBtn.textContent = "»";
-  nextBtn.disabled = blockEnd === totalPages;
+  nextBtn.hidden = blockEnd === totalPages;
   nextBtn.addEventListener("click", () => loadMemberList(blockEnd + 1));
   paginationEl.appendChild(nextBtn);
 }
