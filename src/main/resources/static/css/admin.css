@@ -31,6 +31,9 @@
 .member-pagination button { width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:6px; border:1px solid var(--border); background:none; color:var(--text-1); font-size:13px; }
 .member-pagination button.active { background:var(--accent); border-color:var(--accent); color:#fff; }
 .member-pagination button:disabled { opacity:0.35; cursor:not-allowed; }
+/* 위 button 규칙의 display:flex가 hidden 속성 기본 동작(display:none)보다 우선순위가 높아서 명시적으로 덮어써야 함
+   (« / » 블록 이동 버튼이 블록이 하나뿐일 때 hidden=true여도 안 숨겨지던 문제) */
+.member-pagination button[hidden] { display:none; }
 
 /* ---------- 대시보드 요약 (오늘 가입자수/탈퇴자수/게시글수/누적회원/미처리 신고) 카드 5개 ---------- */
 .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-top:20px; }
