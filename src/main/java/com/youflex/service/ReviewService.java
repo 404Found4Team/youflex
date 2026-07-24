@@ -63,23 +63,29 @@ public class ReviewService {
 	}
 
 //	3) 게시글 상세 조회 (항상 조회수 증가)
-	public ReviewDTO findById(int reviewId) {
-		return findById(reviewId, true);
-	}
+//	public ReviewDTO findById(int reviewId) {
+//		return findById(reviewId, true);
+//	}
 
 //	3-1) 게시글 상세 조회 - increaseHit이 true일 때만 조회수 증가(F5 새로고침 등 중복 호출 시
 //	     조회수가 무한정 올라가지 않도록 increaseHit 여부는 호출부(Controller)에서 판단해서 넘김
-	public ReviewDTO findById(int reviewId, boolean increaseHit) {
+	public ReviewDTO findById(int reviewId) {
 		ReviewDTO review = reviewMapper.findById(reviewId);
 		if (review == null) {
 			throw new ReviewNotFoundException("존재하지 않는 게시글입니다. reviewId=" + reviewId);
 		}
-		if (increaseHit) {
-			reviewMapper.increaseHit(reviewId);
-			review.setReviewHit(review.getReviewHit() + 1);
-		}
+//		if (increaseHit) {
+//			reviewMapper.increaseHit(reviewId);
+//			review.setReviewHit(review.getReviewHit() + 1);
+//		}
+		
 		review.setGenreList(reviewMapper.findGenresByReviewId(reviewId));
 		return review;
+	}
+//	조회수 증가
+	public void increaseHit(ReviewDTO review, int reviewId) {
+		reviewMapper.increaseHit(reviewId);
+		review.setReviewHit(review.getReviewHit() + 1);
 	}
 	
 //	4) 게시글 수정 - 작성자 본인만 가능, 새 이미지 미첨부 시 기존 이미지 유지, 장르는 전체 삭제 후 재삽입
@@ -219,7 +225,11 @@ public class ReviewService {
 	}
 
 //	8) 게시글 신고 등록 (처리 상태는 DB 기본값 '접수', 실제 처리는 관리자 신고 관리 화면(AdminReportService)에서 진행)
+//	   이미 신고한 적 있는 게시글이면 중복 신고를 막는다(처리 상태와 무관하게 1회로 제한).
 	public void reportReview(int reviewId, int memberId, String reason, String content) {
+		if (reviewReportMapper.existsReport(reviewId, memberId) > 0) {
+			throw new IllegalStateException("이미 신고한 게시글입니다.");
+		}
 		reviewReportMapper.insertReport(ReviewReportDTO.builder()
 				.reviewId(reviewId)
 				.memberId(memberId)
