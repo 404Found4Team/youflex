@@ -41,6 +41,13 @@
         INSERT INTO comment_report (comment_id, member_id, comment_report_reason, comment_report_content)
         VALUES (#{commentId}, #{memberId}, #{commentReportReason}, #{commentReportContent})
     </insert>  <!-- 댓글 신고기능 오류나면 지워야함 위에 코드 -->
+    <!-- 중복 신고 방지 - 이 회원이 이 댓글을 신고한 기록이 있는지(처리 상태 무관) -->
+    <select id="existsReport" resultType="int">
+        SELECT COUNT(*)
+        FROM comment_report
+        WHERE comment_id = #{commentId}
+          AND member_id = #{memberId}
+    </select>
     <!-- 처리완료 탭 - 신고 기록 자체 완전 삭제(원본 댓글과는 무관) -->
     <delete id="deleteCommentReport" parameterType="int">
         DELETE FROM comment_report

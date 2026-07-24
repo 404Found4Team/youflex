@@ -128,9 +128,11 @@ public class ReviewController {
 	@GetMapping("/review/{reviewId}")
 	public String detail(@PathVariable("reviewId") int reviewId, Model model, HttpSession session) {
 		// 같은 세션에서 이미 조회한 게시글이면 조회수를 다시 올리지 않음 (F5 새로고침 등)
-		boolean increaseHit = isFirstViewInSession(session, reviewId);
-		ReviewDTO review = reviewService.findById(reviewId, increaseHit);
+//		boolean increaseHit = isFirstViewInSession(session, reviewId);
+		ReviewDTO review = reviewService.findById(reviewId);
 		model.addAttribute("review", review);
+//		조회수 증가
+		reviewService.increaseHit(review, reviewId);
 
 		// 좋아요/북마크 버튼 초기 상태(로그인 상태일 때만 의미가 있음)
 		MemberDTO loginMember = (MemberDTO) session.getAttribute("loginMember");
@@ -167,10 +169,11 @@ public class ReviewController {
 		}
 
 		// 수정 폼 진입은 실제 조회가 아니므로 조회수를 올리지 않음
-		ReviewDTO review = reviewService.findById(reviewId, false);
+		ReviewDTO review = reviewService.findById(reviewId);
 		if (review.getMemberId() != loginMember.getMemberId()) {
 			return "redirect:/review/" + reviewId;
 		}
+		
 		model.addAttribute("review", review);
 		model.addAttribute("genres", genreCategoryService.getAllGenres());
 		model.addAttribute("likeCount", reviewService.getLikeCount(reviewId));
@@ -269,7 +272,11 @@ public class ReviewController {
 		if (loginMember == null) {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 		}
-		reviewService.reportReview(reviewId, loginMember.getMemberId(), request.getReason(), request.getContent());
+		try {
+			reviewService.reportReview(reviewId, loginMember.getMemberId(), request.getReason(), request.getContent());
+		} catch (IllegalStateException e) {
+			return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+		}
 		return ResponseEntity.ok().build();
 	}
 

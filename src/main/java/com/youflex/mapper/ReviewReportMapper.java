@@ -19,6 +19,8 @@ public interface ReviewReportMapper {
 
     // 게시글 신고 등록 (review_report_status는 DB 기본값 '접수' 사용)
     void insertReport(ReviewReportDTO reviewReportDTO);
+    // 이 회원이 이 게시글을 이미 신고했는지 여부(중복 신고 방지용)
+    int existsReport(@Param("reviewId") int reviewId, @Param("memberId") int memberId);
     // 관리자 - 처리완료 탭에서 신고 기록 자체를 완전 삭제(원본 게시글과는 무관)
     void deleteReviewReport(int reviewReportId);
 }

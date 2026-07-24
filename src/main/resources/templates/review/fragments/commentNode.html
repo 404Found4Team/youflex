@@ -45,7 +45,8 @@
     </th:block>
   </div>
 
-  <form class="reply-form" style="display:none" th:if="${session.loginMember != null}" onsubmit="return false">
+  <!-- Enter로 제출 가능하도록 submit 이벤트에서 submitReplyForm 호출 후 기본 폼 전송 차단 -->
+  <form class="reply-form" style="display:none" th:if="${session.loginMember != null}" onsubmit="submitReplyForm(this.querySelector('button')); return false;">
     <input type="text" placeholder="답글을 입력하세요" />
     <button type="button" class="btn btn-primary btn-sm" onclick="submitReplyForm(this)">등록</button>
   </form>

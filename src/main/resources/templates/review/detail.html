@@ -125,7 +125,8 @@
     <section class="comment-section">
       <h3 th:text="|댓글 ${commentCount}|">댓글 128</h3>
 
-      <form id="commentForm" class="comment-input-row" th:if="${session.loginMember != null}" onsubmit="return false">
+      <!-- Enter로 제출 가능하도록 submit 이벤트에서 submitNewComment 호출 후 기본 폼 전송 차단 -->
+      <form id="commentForm" class="comment-input-row" th:if="${session.loginMember != null}" onsubmit="submitNewComment(); return false;">
         <input type="text" id="comment_content" name="comment_content" placeholder="댓글을 입력하세요 (비속어 자동 필터링)" />
         <button type="button" class="btn btn-primary" onclick="submitNewComment()">등록</button>
       </form>

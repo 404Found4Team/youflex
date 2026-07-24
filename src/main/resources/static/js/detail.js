@@ -38,6 +38,12 @@ function submitReportModal() {
         alert('로그인 후 이용할 수 있어요.');
         return;
       }
+      // 중복 신고 - ReviewController/CommentController가 IllegalStateException을 409로 반환
+      if (res.status === 409) {
+        return res.text().then((message) => {
+          alert(message || '이미 신고한 대상입니다.');
+        });
+      }
       if (!res.ok) throw new Error('report failed');
       alert('신고가 접수되었습니다. 운영자 확인 후 처리됩니다.');
       closeReportModal();

@@ -163,7 +163,11 @@ public class CommentService {
     /**
      * 댓글 신고 등록 (처리 상태는 DB 기본값 '접수', 실제 처리는 관리자 신고 관리 화면(AdminReportService)에서 진행)
      */
+    // 이미 신고한 적 있는 댓글이면 중복 신고를 막는다(처리 상태와 무관하게 1회로 제한).
     public void reportComment(CommentReportDTO reportDTO) {
+        if (commentReportMapper.existsReport(reportDTO.getCommentId(), reportDTO.getMemberId()) > 0) {
+            throw new IllegalStateException("이미 신고한 댓글입니다.");
+        }
         commentReportMapper.insertReport(reportDTO);
     }
 

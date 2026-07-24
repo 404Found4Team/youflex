@@ -14,7 +14,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ReviewListService {
 
-	private static final int PAGE_SIZE = 10;
+	// 삭제: private static final int PAGE_SIZE = 10;
+	// [수정] 하이라이트 격자(4열)에서 마지막 줄이 어중간하게 2개만 남지 않도록 10 -> 8(=4열 x 2줄)로 변경
+	private static final int PAGE_SIZE = 8;
 	private static final int POPULAR_LIST_SIZE = 5; // 메인 화면 인기 리뷰글 - 플랫폼별 top5
 
 	private final ReviewListMapper reviewListMapper;

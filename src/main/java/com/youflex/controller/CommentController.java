@@ -116,8 +116,8 @@ public class CommentController {
 
     // 댓글 신고 등록
     @PostMapping("/comments/{commentId}/report")
-    public ResponseEntity<Void> reportComment(@PathVariable("commentId") int commentId,
-                                               @RequestBody CommentReportDTO reportDTO, HttpSession session) {
+    public ResponseEntity<?> reportComment(@PathVariable("commentId") int commentId,
+                                            @RequestBody CommentReportDTO reportDTO, HttpSession session) {
         MemberDTO loginMember = (MemberDTO) session.getAttribute("loginMember");
         if (loginMember == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -125,7 +125,11 @@ public class CommentController {
         reportDTO.setCommentId(commentId);
         // 클라이언트가 보낸 memberId는 무시하고 세션의 로그인 정보로 강제 세팅(위변조 방지)
         reportDTO.setMemberId(loginMember.getMemberId());
-        commentService.reportComment(reportDTO);
+        try {
+            commentService.reportComment(reportDTO);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        }
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 }

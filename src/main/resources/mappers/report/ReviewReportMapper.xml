@@ -45,6 +45,13 @@
         INSERT INTO review_report (review_id, member_id, review_report_reason, review_report_content)
         VALUES (#{reviewId}, #{memberId}, #{reviewReportReason}, #{reviewReportContent})
     </insert> <!-- 댓글과 동일하게 오류나면 수정 -->
+    <!-- 중복 신고 방지 - 이 회원이 이 게시글을 신고한 기록이 있는지(처리 상태 무관) -->
+    <select id="existsReport" resultType="int">
+        SELECT COUNT(*)
+        FROM review_report
+        WHERE review_id = #{reviewId}
+          AND member_id = #{memberId}
+    </select>
     <!-- 처리완료 탭 - 신고 기록 자체 완전 삭제(원본 게시글과는 무관) -->
     <delete id="deleteReviewReport" parameterType="int">
         DELETE FROM review_report
