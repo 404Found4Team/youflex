@@ -448,9 +448,12 @@ function initCategoryNav() {
     const pathname = location.pathname;
     const isReviewList = pathname.endsWith("/review/list");
     const searchParams = new URLSearchParams(location.search);
-    // [수정] sort=highlight 일 때는 '하이라이트' 탭을 활성 탭으로 처리 (그 외엔 기존처럼 platform 기준)
+    // 삭제: const current = isReviewList ? (searchParams.get("sort") === "highlight" ? "highlight" : searchParams.get("platform") || "all") : ...
+    // [수정] sort==='highlight' -> highlightOnly==='true' 기준으로 변경.
+    //        highlightOnly는 sort와 분리된 필터라서, 하이라이트 상태에서 최신순/좋아요순/조회수순을
+    //        눌러 sort가 바뀌어도(=highlightOnly는 그대로 true) '하이라이트' 탭이 계속 활성 표시됨
     const current = isReviewList
-        ? (searchParams.get("sort") === "highlight" ? "highlight" : searchParams.get("platform") || "all")
+        ? (searchParams.get("highlightOnly") === "true" ? "highlight" : searchParams.get("platform") || "all")
         : document.body.dataset.navCurrent || "";
 
     nav.querySelectorAll("a[data-nav]").forEach((a) => {

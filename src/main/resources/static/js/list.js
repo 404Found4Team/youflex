@@ -39,7 +39,13 @@ sortButtons.forEach(btn => {
             // [수정] 하이라이트는 특정 플랫폼이 아닌 "전체 게시글" 중 review_highlighted='Y'가 대상이므로,
             //        이전에 선택돼 있던 platform 필터가 남아있으면 결과가 그 플랫폼으로만 좁혀지는 버그가 있었음 -> 클릭 시 초기화
             const overrides = { sort: sortVal };
-            if (sortVal === 'highlight') overrides.platform = null;
+            if (sortVal === 'highlight') {
+                overrides.platform = null;
+                // [추가] 하이라이트 진입 시 highlightOnly on. 이후 최신순/좋아요순/조회수순을 눌러도
+                //        overrides에 highlightOnly가 없으면 goToFilteredList가 URL의 값을 그대로 유지하므로
+                //        하이라이트 필터가 계속 살아있음 (platform과 동일한 방식)
+                overrides.highlightOnly = true;	// 추가: 하이라이트 진입 시 필터 on
+            }
             goToFilteredList(overrides);
         }
     });
@@ -156,6 +162,12 @@ function goToFilteredList(overrides = {}) {
         if (overrides.platform) params.set('platform', overrides.platform);
         else params.delete('platform');
     }
+    // [추가] highlightOnly는 overrides에 없으면 아예 건드리지 않아서(=URL에 남아있던 값 그대로 유지)
+    //        최신순/좋아요순/조회수순 클릭 시에도 하이라이트 필터가 계속 유지되게 함
+    if (overrides.highlightOnly !== undefined) {
+        if (overrides.highlightOnly) params.set('highlightOnly', 'true');
+        else params.delete('highlightOnly');
+    }
     if (overrides.keyword !== undefined) {
         if (overrides.keyword) params.set('keyword', overrides.keyword);
         else params.delete('keyword');
@@ -190,16 +202,20 @@ document.addEventListener('click', (event) => {
     if (!button.closest('.pagination')) return;
 
     const pageText = button.textContent.trim();
-    const currentPage = Number(new URLSearchParams(window.location.search).get('page') || '1');
     const totalPages = Number(button.closest('.pagination').dataset.totalPages || '0');
+    const blockStart = Number(button.closest('.pagination').dataset.blockStart || '1');
+    const blockEnd = Number(button.closest('.pagination').dataset.blockEnd || '1');
 
-    if (pageText === '‹') {
-        if (currentPage > 1) goToFilteredList({ page: currentPage - 1 });
+    // [수정] 관리자 회원관리 탭과 동일하게 1페이지씩 이동하던 ‹/› 대신 10페이지 블록 단위로 이동하는 «/»로 교체
+    // 삭제: if (pageText === '‹') { if (currentPage > 1) goToFilteredList({ page: currentPage - 1 }); return; }
+    // 삭제: if (pageText === '›') { if (currentPage < totalPages) goToFilteredList({ page: currentPage + 1 }); return; }
+    if (pageText === '«') {
+        if (blockStart > 1) goToFilteredList({ page: blockStart - 1 });
         return;
     }
 
-    if (pageText === '›') {
-        if (currentPage < totalPages) goToFilteredList({ page: currentPage + 1 });
+    if (pageText === '»') {
+        if (blockEnd < totalPages) goToFilteredList({ page: blockEnd + 1 });
         return;
     }
 
