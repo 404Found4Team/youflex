@@ -447,8 +447,10 @@ function initCategoryNav() {
 
     const pathname = location.pathname;
     const isReviewList = pathname.endsWith("/review/list");
+    const searchParams = new URLSearchParams(location.search);
+    // [수정] sort=highlight 일 때는 '하이라이트' 탭을 활성 탭으로 처리 (그 외엔 기존처럼 platform 기준)
     const current = isReviewList
-        ? new URLSearchParams(location.search).get("platform") || "all"
+        ? (searchParams.get("sort") === "highlight" ? "highlight" : searchParams.get("platform") || "all")
         : document.body.dataset.navCurrent || "";
 
     nav.querySelectorAll("a[data-nav]").forEach((a) => {
