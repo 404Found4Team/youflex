@@ -18,17 +18,35 @@ function applyNoticeHashState() {
 // 공지사항/Q&A 목록을 10개 단위로 나눠 보여주는 클라이언트 페이지네이션.
 // 서버는 목록 전체를 이미 다 렌더링해서 내려주므로(별도 페이징 API 없음), 여기서는
 // tbody의 <tr>들을 그룹으로 나눠 display만 토글하는 방식으로 처리한다.
-function initTablePagination(tbodyId, paginationId, pageSize) {
+// searchInputId/matchRow를 넘기면 검색어 입력에 따라 매칭되는 행만 걸러서 페이지네이션한다
+// (서버 재조회 없이 이미 렌더링된 행 중에서 필터링만 하는 방식).
+function initTablePagination(tbodyId, paginationId, pageSize, searchInputId, matchRow) {
   const tbody = document.getElementById(tbodyId);
   const paginationEl = document.getElementById(paginationId);
   if (!tbody || !paginationEl) return;
 
-  // "등록된 ~이 없습니다" 안내 행(colspan)은 페이지 계산에서 제외
-  const rows = Array.from(tbody.children).filter((tr) => !tr.querySelector('td[colspan]'));
-  // 데이터가 없거나 10개 이하여도 항상 최소 1페이지는 보여줌
-  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  // "등록된 ~이 없습니다" 안내 행(colspan)은 검색/페이지 계산에서 제외 (검색어 없을 때는 그대로 유지되는 문구)
+  const allRows = Array.from(tbody.children).filter((tr) => !tr.querySelector('td[colspan]'));
+  const columnCount = tbody.closest('table').querySelectorAll('thead th').length;
 
+  let rows = allRows;
   let currentPage = 1;
+  let currentKeyword = '';
+  let noResultRow = null;
+
+  // 검색 결과가 0건일 때만 보여주는 안내 행 ("등록된 ~이 없습니다"와는 별개)
+  function ensureNoResultRow() {
+    if (noResultRow) return noResultRow;
+    noResultRow = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = columnCount;
+    td.style.textAlign = 'center';
+    td.style.color = 'var(--text-2)';
+    td.textContent = '검색 결과가 없습니다.';
+    noResultRow.appendChild(td);
+    tbody.appendChild(noResultRow);
+    return noResultRow;
+  }
 
   function createPageBtn(label, extraClass, onClick) {
     const btn = document.createElement('button');
@@ -40,10 +58,21 @@ function initTablePagination(tbodyId, paginationId, pageSize) {
   }
 
   function render() {
+    const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+    if (currentPage > totalPages) currentPage = totalPages;
+
+    allRows.forEach((tr) => { tr.style.display = 'none'; });
     rows.forEach((tr, i) => {
       const page = Math.floor(i / pageSize) + 1;
       tr.style.display = page === currentPage ? '' : 'none';
     });
+
+    // 검색어가 있는데 매칭되는 행이 하나도 없을 때만 "검색 결과가 없습니다" 노출
+    if (currentKeyword !== '' && rows.length === 0) {
+      ensureNoResultRow().style.display = '';
+    } else if (noResultRow) {
+      noResultRow.style.display = 'none';
+    }
 
     paginationEl.innerHTML = '';
     paginationEl.appendChild(createPageBtn('‹', 'prev', () => currentPage > 1 && goTo(currentPage - 1)));
@@ -58,7 +87,32 @@ function initTablePagination(tbodyId, paginationId, pageSize) {
     render();
   }
 
+  function applyFilter(keyword) {
+    currentKeyword = keyword.trim().toLowerCase();
+    rows = currentKeyword === '' ? allRows : allRows.filter((tr) => matchRow(tr, currentKeyword));
+    currentPage = 1;
+    render();
+  }
+
   render();
+
+  const searchInput = searchInputId && document.getElementById(searchInputId);
+  if (searchInput && matchRow) {
+    searchInput.addEventListener('input', () => applyFilter(searchInput.value));
+  }
+}
+
+// 공지사항 검색 매칭: 제목만 대상 (작성자는 항상 "관리자" 고정이라 검색 의미 없음)
+function matchNoticeRow(tr, keywordLower) {
+  const titleText = tr.children[1] ? tr.children[1].textContent.toLowerCase() : '';
+  return titleText.includes(keywordLower);
+}
+
+// Q&A 검색 매칭: 제목 OR 작성자 (리뷰 게시글 검색과 동일한 방식)
+function matchQnaRow(tr, keywordLower) {
+  const titleText = tr.children[1] ? tr.children[1].textContent.toLowerCase() : '';
+  const authorText = tr.children[2] ? tr.children[2].textContent.toLowerCase() : '';
+  return titleText.includes(keywordLower) || authorText.includes(keywordLower);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -69,8 +123,8 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', () => syncTopNavActive(btn.dataset.tabTarget));
   });
 
-  initTablePagination('noticeListBody', 'noticePagination', 10);
-  initTablePagination('qnaListBody', 'qnaPagination', 10);
+  initTablePagination('noticeListBody', 'noticePagination', 10, 'noticeSearchKeyword', matchNoticeRow);
+  initTablePagination('qnaListBody', 'qnaPagination', 10, 'qnaSearchKeyword', matchQnaRow);
 });
 // 05_notice.html 안에서 05_notice.html#qna 로 이동하는 것처럼 같은 문서 안 해시만 바뀌는 경우
 // DOMContentLoaded가 다시 발생하지 않으므로 hashchange도 같이 들어야 함

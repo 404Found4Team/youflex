@@ -42,6 +42,7 @@ public class ReviewService {
 	private final ReviewDraftMapper reviewDraftMapper;
 	private final PointService pointService;
 	private final BadWordService badWordService;
+	private final NotificationsService notificationsService;
 
 //	1) 게시글 저장
 	@Transactional
@@ -129,6 +130,9 @@ public class ReviewService {
 			throw new ReviewNotFoundException("존재하지 않는 게시글입니다. reviewId=" + reviewId);
 		}
 		reviewMapper.delete(reviewId);
+		// 관리자에 의해 게시글이 삭제되었음을 작성자에게 헤더 🔔 알림으로 통보
+		notificationsService.notify(existing.getMemberId(), "게시글삭제",
+				"작성하신 게시글이 관리자에 의해 삭제되었습니다.", "admin_notice");
 	}
 
 

@@ -458,6 +458,20 @@ function initCategoryNav() {
     });
 }
 
+// 헤더 통합검색 - 검색어 없이 돋보기만 눌러 전체 게시글이 조회되는 것을 막고, 입력을 유도하는 alert 표시
+function initHeaderSearch() {
+    const searchForm = document.querySelector(".search-bar");
+    if (!searchForm) return;
+
+    searchForm.addEventListener("submit", (e) => {
+        const keywordInput = searchForm.querySelector('input[name="keyword"]');
+        if (!keywordInput || keywordInput.value.trim() === "") {
+            e.preventDefault();
+            alert("검색어를 입력해주세요.");
+        }
+    });
+}
+
 function initReviewListSort() {
     const buttons = document.querySelectorAll('.sort-group button[data-sort]');
     if (!buttons.length) return;
@@ -484,6 +498,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initHeroSlider();
     initCategoryNav();
     initReviewListSort();
+    initHeaderSearch();
 
     // 오버레이 3종 (퀴즈 / 채팅방 / 알림) 초기화
     initOverlay("quizPanel", "quizBackdrop", ["quizFab"], ["quizClose"], null, true);

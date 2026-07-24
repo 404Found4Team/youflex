@@ -295,6 +295,7 @@ create table chat_member (
     member_id              int not null,
     chatroom_id             int not null,
     active_member_id int GENERATED ALWAYS AS (IF(chat_member_status = '참여중', member_id, NULL)) virtual,
+    chat_member_created_at datetime not null default now(), -- 입장 시각: 이 시점 이전 메시지는 해당 회원에게 영구히 숨김 처리하는 기준값으로 사용
     chat_member_role        enum('방장','참여자') not null default '참여자',
     chat_member_status      enum('참여중','퇴장','강퇴') not null default '참여중', -- [수정3] 강퇴/자진퇴장 구분
     constraint pk_chat_member primary key (chat_member_id),
